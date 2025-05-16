@@ -1,41 +1,44 @@
+version: '3.8'
 
 services:
   mariadb:
-    image: mariadb:latest
-    container_name: mariadb-container
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword123 
-      MYSQL_DATABASE: persona_db
-      MYSQL_USER: persona_db 
-      MYSQL_PASSWORD: persona_db 
-    ports:
-      - "3306:3306" 
-    volumes:
-      - mariadb_data:/var/lib/mysql 
-      - ./scripts/persona_ddl_maria.sql:/docker-entrypoint-initdb.d/persona_ddl_maria.sql
-    networks:
-      - proyecto_network
+      image: mariadb:10.6
+      container_name: mariadb_persona
+      restart: always
+      environment:
+        MARIADB_ROOT_PASSWORD: rootpassword
+        MARIADB_DATABASE: persona_db
+        MARIADB_USER: persona_db
+        MARIADB_PASSWORD: persona_db
+      ports:
+        - "3306:3306"
+      volumes:
+        - mariadb_data:/var/lib/mysql
+        - ./scripts/persona_ddl_maria.sql:/docker-entrypoint-initdb.d/persona_ddl_maria.sql:ro
+        - ./scripts/persona_dml_maria.sql:/docker-entrypoint-initdb.d/persona_dml_maria.sql:ro
+      networks:
+        - backend
 
   mongodb:
-    image: mongo:latest
-    container_name: mongodb-container
+    image: mongo:6
+    container_name: mongodb_persona
+    restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin 
-      MONGO_INITDB_ROOT_PASSWORD: admin 
-      MONGO_INITDB_DATABASE: admin
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: persona_db
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./scripts/persona_ddl_mongo.js:/docker-entrypoint-initdb.d/persona_ddl_mongo.js
+      - ./scripts/persona_ddl_mongo.js:/docker-entrypoint-initdb.d/persona_ddl_mongo.js:ro
+      - ./scripts/persona_dml_mongo.js:/docker-entrypoint-initdb.d/persona_dml_mongo.js:ro
     networks:
-      - proyecto_network
-    command: ["--auth"]
+      - backend
 
 volumes:
   mariadb_data:
   mongodb_data:
 
 networks:
-  proyecto_network:
-    driver: bridge
+  backend:
