@@ -29,11 +29,10 @@ COPY rest-input-adapter/src ./rest-input-adapter/src
 COPY cli-input-adapter/src ./cli-input-adapter/src
 
 # Compilar proyecto completo
-RUN mvn clean package -DskipTests
+RUN mvn clean install -DskipTests
 
-# Ejecutar spring-boot:repackage solo en los módulos con @SpringBootApplication
-RUN mvn spring-boot:repackage -pl rest-input-adapter
-RUN mvn spring-boot:repackage -pl cli-input-adapter
+# Los JARs ejecutables deberían estar en los directorios target de cada módulo
+# con el sufijo .jar (no .jar.original)
 
 # Verificar qué archivos se generaron
 RUN echo "=== CLI JARs ===" && ls -la /app/cli-input-adapter/target/
@@ -43,9 +42,9 @@ RUN echo "=== REST JARs ===" && ls -la /app/rest-input-adapter/target/
 FROM alpine:latest
 WORKDIR /output
 
-# Copiar todos los JARs
-COPY --from=build /app/cli-input-adapter/target/*.jar ./cli/
-COPY --from=build /app/rest-input-adapter/target/*.jar ./rest/
+# Copiar solo los JARs ejecutables (sin el .original)
+COPY --from=build /app/cli-input-adapter/target/cli-input-adapter-*.jar ./cli/
+COPY --from=build /app/rest-input-adapter/target/rest-input-adapter-*.jar ./rest/
 
 # Verificar que se copiaron
 RUN echo "=== CLI copied ===" && ls -la ./cli/

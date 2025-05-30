@@ -51,7 +51,15 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+					<mainClass>co.edu.javeriana.as.personapp.PersonAppRestApi</mainClass>
 				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
