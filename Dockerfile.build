@@ -1,0 +1,52 @@
+# Dockerfile para compilar el proyecto
+FROM maven:3.8.4-openjdk-11 AS build
+
+# Copiar archivos del proyecto
+WORKDIR /app
+
+# Copiar POM principal primero (para aprovechar cache de Docker)
+COPY pom.xml .
+
+# Copiar POMs de módulos
+COPY common/pom.xml ./common/
+COPY domain/pom.xml ./domain/
+COPY application/pom.xml ./application/
+COPY maria-output-adapter/pom.xml ./maria-output-adapter/
+COPY mongo-output-adapter/pom.xml ./mongo-output-adapter/
+COPY rest-input-adapter/pom.xml ./rest-input-adapter/
+COPY cli-input-adapter/pom.xml ./cli-input-adapter/
+
+# Descargar dependencias (mejor cache)
+RUN mvn dependency:go-offline -B
+
+# Copiar código fuente
+COPY common/src ./common/src
+COPY domain/src ./domain/src
+COPY application/src ./application/src
+COPY maria-output-adapter/src ./maria-output-adapter/src
+COPY mongo-output-adapter/src ./mongo-output-adapter/src
+COPY rest-input-adapter/src ./rest-input-adapter/src
+COPY cli-input-adapter/src ./cli-input-adapter/src
+
+# Compilar proyecto completo
+RUN mvn clean package -DskipTests
+
+# Ejecutar spring-boot:repackage solo en los módulos con @SpringBootApplication
+RUN mvn spring-boot:repackage -pl rest-input-adapter
+RUN mvn spring-boot:repackage -pl cli-input-adapter
+
+# Verificar qué archivos se generaron
+RUN echo "=== CLI JARs ===" && ls -la /app/cli-input-adapter/target/
+RUN echo "=== REST JARs ===" && ls -la /app/rest-input-adapter/target/
+
+# Crear imagen final vacía solo para extraer los JARs
+FROM alpine:latest
+WORKDIR /output
+
+# Copiar todos los JARs
+COPY --from=build /app/cli-input-adapter/target/*.jar ./cli/
+COPY --from=build /app/rest-input-adapter/target/*.jar ./rest/
+
+# Verificar que se copiaron
+RUN echo "=== CLI copied ===" && ls -la ./cli/
+RUN echo "=== REST copied ===" && ls -la ./rest/

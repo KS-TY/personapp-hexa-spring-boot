@@ -1,7 +1,7 @@
 # personapp-hexa-spring-boot
 Plantilla Laboratorio Arquitectura Limpia
 
-Instalar MariaDB en puerto 3307
+Instalar MariaDB en puerto 3306
 Instalar MongoDB en puerto 27017
 
 Ejecutar los scripts en las dbs
