@@ -21,7 +21,13 @@ public class PersonaResponse extends PersonaRequest{
 		this.status = status;
 	}
 	
-	// Agregar alias para diferentes campos de ID
+	// Usar _id como campo principal para MongoDB
+	@JsonProperty("_id")
+	public String get_id() {
+		return getDni();
+	}
+	
+	// Mantener aliases para compatibilidad
 	@JsonProperty("identification")
 	public String getIdentification() {
 		return getDni();

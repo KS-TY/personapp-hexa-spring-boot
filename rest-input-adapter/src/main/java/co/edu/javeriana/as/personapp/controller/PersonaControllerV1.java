@@ -54,14 +54,25 @@ public class PersonaControllerV1 {
 	public PersonaResponse eliminarPersona(
 			@PathVariable("identification") Integer identification, 
 			@RequestParam("database") String database) {
-		log.info("Into eliminarPersona REST API - ID: {}, Database: {}", identification, database);
 		
-		// Validación adicional
+		log.info("=== DELETE REQUEST ===");
+		log.info("PathVariable identification: {}", identification);
+		log.info("RequestParam database: {}", database);
+		log.info("Identification type: {}", identification != null ? identification.getClass().getSimpleName() : "null");
+		
+		// Validación adicional con logging detallado
 		if (identification == null) {
-			log.error("Identification is null!");
+			log.error("CRITICAL ERROR: Identification is null!");
+			log.error("This means the path variable {identification} was not properly extracted");
 			return new PersonaResponse("", "", "", "", "", database, "ERROR: ID no puede ser null");
 		}
 		
-		return personaInputAdapterRest.eliminarPersona(identification, database.toUpperCase());
+		log.info("Processing delete for ID: {} in database: {}", identification, database);
+		
+		PersonaResponse response = personaInputAdapterRest.eliminarPersona(identification, database.toUpperCase());
+		
+		log.info("Delete response: {}", response != null ? response.getStatus() : "null response");
+		
+		return response;
 	}
 }

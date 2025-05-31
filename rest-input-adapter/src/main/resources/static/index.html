@@ -439,20 +439,7 @@
         <div class="header">
             <h1>🧑‍💼 PersonApp</h1>
             <p>Sistema de Gestión de Personas - Arquitectura Hexagonal</p>
-        <!-- Modal para confirmar eliminación -->
-    <div id="confirmModal" class="confirm-modal">
-        <div class="confirm-content">
-            <div class="confirm-icon">⚠️</div>
-            <div class="confirm-title">¿Confirmar eliminación?</div>
-            <div class="confirm-message" id="confirmMessage">
-                ¿Está seguro de que desea eliminar esta persona? Esta acción no se puede deshacer.
-            </div>
-            <div class="confirm-actions">
-                <button class="btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
-                <button class="btn-confirm" onclick="confirmDelete()">🗑️ Eliminar</button>
-            </div>
         </div>
-    </div>
         
         <div class="main-content">
             <!-- Estadísticas -->
@@ -490,7 +477,7 @@
                 <h3>➕ Crear Nueva Persona</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="dni">Cédula:</label>
+                        <label for="dni">ID:</label>
                         <input type="number" id="dni" placeholder="Ej: 123456789">
                     </div>
                     <div class="form-group">
@@ -549,7 +536,7 @@
             </div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="editDni">Cédula:</label>
+                    <label for="editDni">ID:</label>
                     <input type="number" id="editDni" readonly style="background: #f5f5f5;">
                 </div>
                 <div class="form-group">
@@ -587,6 +574,21 @@
         </div>
     </div>
 
+    <!-- Modal para confirmar eliminación -->
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-content">
+            <div class="confirm-icon">⚠️</div>
+            <div class="confirm-title">¿Confirmar eliminación?</div>
+            <div class="confirm-message" id="confirmMessage">
+                ¿Está seguro de que desea eliminar esta persona? Esta acción no se puede deshacer.
+            </div>
+            <div class="confirm-actions">
+                <button class="btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
+                <button class="btn-confirm" onclick="confirmDelete()">🗑️ Eliminar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api/v1/persona';
         
@@ -606,6 +608,12 @@
         // Mostrar/ocultar loading
         function setLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        // Extraer ID correcto de una persona
+        function getPersonId(person) {
+            // Priorizar _id para MongoDB, luego otros campos
+            return person._id || person.id || person.dni || person.identification || person.cc;
         }
 
         // Cargar personas de una base de datos
@@ -646,28 +654,15 @@
                 const mariaPersons = mariaResponse.ok ? await mariaResponse.json() : [];
                 const mongoPersons = mongoResponse.ok ? await mongoResponse.json() : [];
                 
-                // Debug: mostrar exactamente qué devuelve cada API
-                console.log('=== MARIA RESPONSE ===');
-                console.log('Raw response:', mariaPersons);
-                if (mariaPersons.length > 0) {
-                    console.log('First Maria person:', mariaPersons[0]);
-                    console.log('Maria person keys:', Object.keys(mariaPersons[0]));
-                }
-                
-                console.log('=== MONGO RESPONSE ===');
-                console.log('Raw response:', mongoPersons);
-                if (mongoPersons.length > 0) {
-                    console.log('First Mongo person:', mongoPersons[0]);
-                    console.log('Mongo person keys:', Object.keys(mongoPersons[0]));
-                }
+                console.log('=== MARIA RESPONSE ===', mariaPersons);
+                console.log('=== MONGO RESPONSE ===', mongoPersons);
                 
                 const allPersons = [
                     ...mariaPersons.map(p => ({...p, database: 'MariaDB'})),
                     ...mongoPersons.map(p => ({...p, database: 'MongoDB'}))
                 ];
                 
-                console.log('=== COMBINED PERSONS ===');
-                console.log('All persons:', allPersons);
+                console.log('=== COMBINED PERSONS ===', allPersons);
                 
                 displayPersons(allPersons, 'BOTH');
                 updateStatsFromBoth(mariaPersons, mongoPersons);
@@ -690,15 +685,14 @@
             }
             
             container.innerHTML = persons.map(person => {
-                // Obtener el ID correcto desde cualquier campo disponible
-                const personId = person.dni || person.identification || person.cc || 'N/A';
-                const personFirstName = (person.firstName || 'Sin nombre').replace(/'/g, "&apos;");
-                const personLastName = (person.lastName || 'Sin apellido').replace(/'/g, "&apos;");
-                const personAge = person.age || 'No especificada';
-                const personSex = person.sex || 'M';
+                const personId = getPersonId(person);
+                const personFirstName = (person.firstName || person.nombre || 'Sin nombre').replace(/'/g, "&apos;");
+                const personLastName = (person.lastName || person.apellido || 'Sin apellido').replace(/'/g, "&apos;");
+                const personAge = person.age || person.edad || 'No especificada';
+                const personSex = person.sex || person.genero || 'M';
                 const personDatabase = person.database || source;
                 
-                console.log('Person data:', { personId, personFirstName, personLastName, personAge, personSex, personDatabase });
+                console.log('Displaying person:', { personId, personFirstName, personLastName, personAge, personSex, personDatabase });
                 
                 return `
                     <div class="person-card">
@@ -712,10 +706,10 @@
                             ${personDatabase}
                         </span>
                         <div class="person-actions">
-                            <button class="btn-small btn-edit" onclick="openEditModal('${personId}', '${personFirstName}', '${personLastName}', '${personAge}', '${personSex}', '${personDatabase}')">
+                            <button class="btn-small btn-edit" onclick="openEditModal(${personId}, '${personFirstName}', '${personLastName}', '${personAge}', '${personSex}', '${personDatabase}')">
                                 ✏️ Editar
                             </button>
-                            <button class="btn-small btn-delete" onclick="deletePerson('${personId}', '${personDatabase}')">
+                            <button class="btn-small btn-delete" onclick="deletePerson(${personId}, '${personDatabase}')">
                                 🗑️ Eliminar
                             </button>
                         </div>
@@ -768,7 +762,7 @@
 
             // Validaciones básicas
             if (!formData.dni || !formData.firstName || !formData.lastName) {
-                showMessage('❌ Por favor complete los campos obligatorios (Cédula, Nombre, Apellido)', 'error');
+                showMessage('❌ Por favor complete los campos obligatorios (ID, Nombre, Apellido)', 'error');
                 return;
             }
 
@@ -806,22 +800,6 @@
             }
         }
 
-        // Cargar datos al iniciar
-        document.addEventListener('DOMContentLoaded', function() {
-            loadBothDatabases();
-        });
-
-        // Tecla Enter en formulario
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
-                if (document.getElementById('editModal').style.display === 'block') {
-                    updatePerson();
-                } else {
-                    createPerson();
-                }
-            }
-        });
-
         // Variables para edición y eliminación
         let currentEditId = null;
         let currentDeleteId = null;
@@ -829,11 +807,12 @@
 
         // Abrir modal de edición
         function openEditModal(id, firstName, lastName, age, sex, database) {
+            console.log('Opening edit modal with:', { id, firstName, lastName, age, sex, database });
             currentEditId = id;
             document.getElementById('editDni').value = id;
             document.getElementById('editFirstName').value = firstName || '';
             document.getElementById('editLastName').value = lastName || '';
-            document.getElementById('editAge').value = age && age !== 'null' && age !== 'undefined' ? age : '';
+            document.getElementById('editAge').value = age && age !== 'null' && age !== 'undefined' && age !== 'No especificada' ? age : '';
             document.getElementById('editSex').value = sex || 'M';
             document.getElementById('editDatabase').value = database === 'MariaDB' ? 'MARIA' : 'MONGO';
             document.getElementById('editModal').style.display = 'block';
@@ -990,6 +969,22 @@
                 currentDeleteDatabase = null;
             }
         }
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBothDatabases();
+        });
+
+        // Tecla Enter en formulario
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                if (document.getElementById('editModal').style.display === 'block') {
+                    updatePerson();
+                } else {
+                    createPerson();
+                }
+            }
+        });
 
         // Cerrar modal al hacer clic fuera
         window.onclick = function(event) {

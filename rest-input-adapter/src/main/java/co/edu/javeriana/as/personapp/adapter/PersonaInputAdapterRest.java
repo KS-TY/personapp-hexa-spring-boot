@@ -109,16 +109,28 @@ public class PersonaInputAdapterRest {
 		}
 	}
 
+	// Solo la función eliminarPersona con debug mejorado
+
 	public PersonaResponse eliminarPersona(Integer identification, String database) {
-		log.info("Into eliminarPersona PersonaEntity in Input Adapter - ID: {}, Database: {}", identification, database);
+		log.info("=== ADAPTER DELETE START ===");
+		log.info("Received identification: {}", identification);
+		log.info("Received database: {}", database);
+		log.info("identification is null: {}", identification == null);
+		log.info("identification toString: {}", identification != null ? identification.toString() : "NULL");
+		
 		try {
 			String dbUsed = setPersonOutputPortInjection(database);
+			log.info("Database option set to: {}", dbUsed);
 			
 			// Verificar que la persona existe antes de eliminar
+			log.info("Searching for person with ID: {}", identification);
 			Person existingPerson = personInputPort.findOne(identification);
+			log.info("Found person: {}", existingPerson != null ? existingPerson.getIdentification() : "null");
 			
 			// Eliminar la persona
+			log.info("Attempting to delete person with ID: {}", identification);
 			Boolean deleted = personInputPort.drop(identification);
+			log.info("Delete operation result: {}", deleted);
 			
 			if (deleted) {
 				// Crear respuesta de éxito con los datos de la persona eliminada
@@ -129,20 +141,24 @@ public class PersonaInputAdapterRest {
 					response = personaMapperRest.fromDomainToAdapterRestMongo(existingPerson);
 				}
 				response.setStatus("DELETED");
+				log.info("Success response created with status: {}", response.getStatus());
 				return response;
 			} else {
+				log.warn("Delete operation returned false for ID: {}", identification);
 				return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: No se pudo eliminar la persona");
 			}
 			
 		} catch (InvalidOptionException e) {
-			log.warn("Invalid option: " + e.getMessage());
+			log.error("Invalid option: {}", e.getMessage());
 			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: " + e.getMessage());
 		} catch (NoExistException e) {
-			log.warn("Person not found for deletion: " + e.getMessage());
+			log.error("Person not found for deletion: {}", e.getMessage());
 			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: Persona no encontrada");
 		} catch (Exception e) {
-			log.error("Unexpected error during deletion: " + e.getMessage(), e);
+			log.error("Unexpected error during deletion: {}", e.getMessage(), e);
 			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: " + e.getMessage());
+		} finally {
+			log.info("=== ADAPTER DELETE END ===");
 		}
 	}
 }

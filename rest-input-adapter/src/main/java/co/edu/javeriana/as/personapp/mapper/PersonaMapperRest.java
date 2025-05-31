@@ -23,7 +23,12 @@ public class PersonaMapperRest {
 		log.debug("Mapping person to response: ID={}, Name={} {}, Database={}", 
 			person.getIdentification(), person.getFirstName(), person.getLastName(), database);
 		
-		String personId = person.getIdentification() != null ? person.getIdentification().toString() : "0";
+		// Asegurar que el ID no sea null y convertirlo a String
+		String personId = "0";
+		if (person.getIdentification() != null) {
+			personId = person.getIdentification().toString();
+		}
+		
 		String firstName = person.getFirstName() != null ? person.getFirstName() : "";
 		String lastName = person.getLastName() != null ? person.getLastName() : "";
 		String age = person.getAge() != null ? person.getAge().toString() : "";
@@ -49,6 +54,11 @@ public class PersonaMapperRest {
 			}
 		} catch (NumberFormatException e) {
 			log.warn("Invalid DNI format: {}", request.getDni());
+			throw new IllegalArgumentException("DNI debe ser un número válido: " + request.getDni());
+		}
+		
+		if (identification == null) {
+			throw new IllegalArgumentException("DNI es obligatorio y debe ser un número válido");
 		}
 		
 		person.setIdentification(identification);
@@ -60,9 +70,13 @@ public class PersonaMapperRest {
 		try {
 			if (request.getAge() != null && !request.getAge().trim().isEmpty()) {
 				age = Integer.valueOf(request.getAge().trim());
+				if (age < 0 || age > 150) {
+					throw new IllegalArgumentException("Edad debe estar entre 0 y 150 años");
+				}
 			}
 		} catch (NumberFormatException e) {
 			log.warn("Invalid age format: {}", request.getAge());
+			throw new IllegalArgumentException("Edad debe ser un número válido: " + request.getAge());
 		}
 		
 		person.setAge(age);
