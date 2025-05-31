@@ -3,512 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PersonApp - Gestión de Personas</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-        
-        .main-content {
-            padding: 40px;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        
-        .db-selector {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .db-selector label {
-            font-weight: 600;
-            color: #333;
-        }
-        
-        select, button, input {
-            padding: 12px 20px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        select:focus, input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .form-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .form-section h3 {
-            margin-bottom: 20px;
-            color: #333;
-            font-size: 1.3rem;
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .form-group label {
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-        }
-        
-        .persons-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .person-card {
-            background: white;
-            border: 1px solid #e1e5e9;
-            border-radius: 10px;
-            padding: 20px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .person-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .person-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        .person-actions {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-edit {
-            background: #4caf50;
-            color: white;
-        }
-
-        .btn-edit:hover {
-            background: #45a049;
-            transform: translateY(-1px);
-        }
-
-        .btn-delete {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-delete:hover {
-            background: #da190b;
-            transform: translateY(-1px);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            position: relative;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e1e5e9;
-        }
-
-        .modal-header h3 {
-            color: #333;
-            margin: 0;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            background: none;
-        }
-
-        .close:hover {
-            color: #000;
-        }
-
-        .confirm-modal {
-            display: none;
-            position: fixed;
-            z-index: 1001;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.6);
-        }
-
-        .confirm-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-
-        .confirm-icon {
-            font-size: 4rem;
-            color: #f44336;
-            margin-bottom: 20px;
-        }
-
-        .confirm-title {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .confirm-message {
-            color: #666;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-
-        .confirm-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .btn-confirm {
-            background: #f44336;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-confirm:hover {
-            background: #da190b;
-            transform: translateY(-2px);
-        }
-
-        .btn-cancel {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-cancel:hover {
-            background: #545b62;
-            transform: translateY(-2px);
-        }
-        
-        .person-id {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        
-        .person-name {
-            font-size: 1.1rem;
-            color: #333;
-            margin-bottom: 8px;
-        }
-        
-        .person-details {
-            color: #666;
-            font-size: 0.95rem;
-        }
-        
-        .database-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-top: 10px;
-        }
-        
-        .maria-badge {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .mongo-badge {
-            background: #e8f5e8;
-            color: #388e3c;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        
-        .error {
-            background: #ffebee;
-            color: #c62828;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #c62828;
-        }
-        
-        .success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #4caf50;
-        }
-        
-        .stats {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #e1e5e9;
-            flex: 1;
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            color: #666;
-            margin-top: 5px;
-        }
-
-        @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats {
-                flex-direction: column;
-            }
-        }
-    </style>
+    <title>PersonApp - Gestión de Personas y Profesiones</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🧑‍💼 PersonApp</h1>
-            <p>Sistema de Gestión de Personas - Arquitectura Hexagonal</p>
+            <p>Sistema de Gestión de Personas y Profesiones - Arquitectura Hexagonal</p>
         </div>
         
         <div class="main-content">
-            <!-- Estadísticas -->
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalPersons">0</div>
-                    <div class="stat-label">Total Personas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="mariaCount">0</div>
-                    <div class="stat-label">En MariaDB</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="mongoCount">0</div>
-                    <div class="stat-label">En MongoDB</div>
-                </div>
+            <!-- Navegación entre secciones -->
+            <div class="navigation">
+                <button class="nav-button active" data-section="personas">👥 Personas</button>
+                <button class="nav-button" data-section="professions">💼 Profesiones</button>
             </div>
 
-            <!-- Controles principales -->
-            <div class="controls">
-                <div class="db-selector">
-                    <label for="database">Base de Datos:</label>
-                    <select id="database">
-                        <option value="MARIA">MariaDB</option>
-                        <option value="MONGO">MongoDB</option>
-                    </select>
+            <!-- Sección de Personas -->
+            <div id="personas-section" class="section active">
+                <!-- Estadísticas de Personas -->
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPersonas">0</div>
+                        <div class="stat-label">Total Personas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="personasMariaCount">0</div>
+                        <div class="stat-label">En MariaDB</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="personasMongoCount">0</div>
+                        <div class="stat-label">En MongoDB</div>
+                    </div>
                 </div>
-                <button onclick="loadPersons()">🔄 Cargar Personas</button>
-                <button onclick="loadBothDatabases()">📊 Cargar Ambas BD</button>
-                <button onclick="window.open('/swagger-ui.html', '_blank')">📖 Ver API Docs</button>
-            </div>
 
-            <!-- Formulario para crear persona -->
-            <div class="form-section">
-                <h3>➕ Crear Nueva Persona</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="dni">ID:</label>
-                        <input type="number" id="dni" placeholder="Ej: 123456789">
-                    </div>
-                    <div class="form-group">
-                        <label for="firstName">Nombre:</label>
-                        <input type="text" id="firstName" placeholder="Ej: Juan">
-                    </div>
-                    <div class="form-group">
-                        <label for="lastName">Apellido:</label>
-                        <input type="text" id="lastName" placeholder="Ej: Pérez">
-                    </div>
-                    <div class="form-group">
-                        <label for="age">Edad:</label>
-                        <input type="number" id="age" placeholder="Ej: 30" min="0" max="120">
-                    </div>
-                    <div class="form-group">
-                        <label for="sex">Género:</label>
-                        <select id="sex">
-                            <option value="M">Masculino</option>
-                            <option value="F">Femenino</option>
-                            <option value="O">Otro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="createDatabase">Guardar en:</label>
-                        <select id="createDatabase">
+                <!-- Controles de Personas -->
+                <div class="controls">
+                    <div class="db-selector">
+                        <label for="database">Base de Datos:</label>
+                        <select id="database">
                             <option value="MARIA">MariaDB</option>
                             <option value="MONGO">MongoDB</option>
                         </select>
                     </div>
+                    <button onclick="loadItems()">🔄 Cargar Personas</button>
+                    <button onclick="loadBothDatabases()">📊 Cargar Ambas BD</button>
+                    <button onclick="window.open('/swagger-ui.html', '_blank')">📖 Ver API Docs</button>
                 </div>
-                <button onclick="createPerson()">➕ Crear Persona</button>
+
+                <!-- Formulario para crear persona -->
+                <div class="form-section">
+                    <h3>➕ Crear Nueva Persona</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="dni">ID:</label>
+                            <input type="number" id="dni" placeholder="Ej: 123456789">
+                        </div>
+                        <div class="form-group">
+                            <label for="firstName">Nombre:</label>
+                            <input type="text" id="firstName" placeholder="Ej: Juan">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Apellido:</label>
+                            <input type="text" id="lastName" placeholder="Ej: Pérez">
+                        </div>
+                        <div class="form-group">
+                            <label for="age">Edad:</label>
+                            <input type="number" id="age" placeholder="Ej: 30" min="0" max="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="sex">Género:</label>
+                            <select id="sex">
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                                <option value="O">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="createDatabase">Guardar en:</label>
+                            <select id="createDatabase">
+                                <option value="MARIA">MariaDB</option>
+                                <option value="MONGO">MongoDB</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="createItem()">➕ Crear Persona</button>
+                </div>
+
+                <!-- Lista de personas -->
+                <div id="personas-container">
+                    <h3>👥 Lista de Personas</h3>
+                    <div id="personas-list" class="items-grid"></div>
+                </div>
+            </div>
+
+            <!-- Sección de Profesiones -->
+            <div id="professions-section" class="section">
+                <!-- Estadísticas de Profesiones -->
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalProfessions">0</div>
+                        <div class="stat-label">Total Profesiones</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="professionsMariaCount">0</div>
+                        <div class="stat-label">En MariaDB</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="professionsMongoCount">0</div>
+                        <div class="stat-label">En MongoDB</div>
+                    </div>
+                </div>
+
+                <!-- Controles de Profesiones -->
+                <div class="controls">
+                    <div class="db-selector">
+                        <label for="professionDatabase">Base de Datos:</label>
+                        <select id="professionDatabase">
+                            <option value="MARIA">MariaDB</option>
+                            <option value="MONGO">MongoDB</option>
+                        </select>
+                    </div>
+                    <button onclick="loadItems()">🔄 Cargar Profesiones</button>
+                    <button onclick="loadBothDatabases()">📊 Cargar Ambas BD</button>
+                    <button onclick="window.open('/swagger-ui.html', '_blank')">📖 Ver API Docs</button>
+                </div>
+
+                <!-- Formulario para crear profesión -->
+                <div class="form-section">
+                    <h3>➕ Crear Nueva Profesión</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="id">ID:</label>
+                            <input type="number" id="id" placeholder="Ej: 1">
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Nombre:</label>
+                            <input type="text" id="name" placeholder="Ej: Ingeniero de Software">
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Descripción:</label>
+                            <input type="text" id="description" placeholder="Ej: Desarrollo de aplicaciones">
+                        </div>
+                        <div class="form-group">
+                            <label for="createDatabase">Guardar en:</label>
+                            <select id="createDatabase">
+                                <option value="MARIA">MariaDB</option>
+                                <option value="MONGO">MongoDB</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="createItem()">➕ Crear Profesión</button>
+                </div>
+
+                <!-- Lista de profesiones -->
+                <div id="professions-container">
+                    <h3>💼 Lista de Profesiones</h3>
+                    <div id="professions-list" class="items-grid"></div>
+                </div>
             </div>
 
             <!-- Área de mensajes -->
@@ -518,58 +171,68 @@
             <div id="loading" class="loading" style="display: none;">
                 <h3>⏳ Cargando datos...</h3>
             </div>
-
-            <!-- Lista de personas -->
-            <div id="persons-container">
-                <h3>👥 Lista de Personas</h3>
-                <div id="persons-list" class="persons-grid"></div>
-            </div>
         </div>
     </div>
 
-    <!-- Modal para editar persona -->
+    <!-- Modal para editar -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>✏️ Editar Persona</h3>
+                <h3 id="editModalTitle">✏️ Editar Elemento</h3>
                 <button class="close" onclick="closeEditModal()">&times;</button>
             </div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="editDni">ID:</label>
-                    <input type="number" id="editDni" readonly style="background: #f5f5f5;">
-                </div>
-                <div class="form-group">
-                    <label for="editFirstName">Nombre:</label>
-                    <input type="text" id="editFirstName" placeholder="Ej: Juan">
-                </div>
-                <div class="form-group">
-                    <label for="editLastName">Apellido:</label>
-                    <input type="text" id="editLastName" placeholder="Ej: Pérez">
-                </div>
-                <div class="form-group">
-                    <label for="editAge">Edad:</label>
-                    <input type="number" id="editAge" placeholder="Ej: 30" min="0" max="120">
-                </div>
-                <div class="form-group">
-                    <label for="editSex">Género:</label>
-                    <select id="editSex">
-                        <option value="M">Masculino</option>
-                        <option value="F">Femenino</option>
-                        <option value="O">Otro</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="editDatabase">Base de datos:</label>
-                    <select id="editDatabase">
-                        <option value="MARIA">MariaDB</option>
-                        <option value="MONGO">MongoDB</option>
-                    </select>
+            
+            <!-- Formulario de edición para Personas -->
+            <div id="editPersonForm" class="edit-form" style="display: none;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="editDni">ID:</label>
+                        <input type="number" id="editDni" readonly style="background: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label for="editFirstName">Nombre:</label>
+                        <input type="text" id="editFirstName" placeholder="Ej: Juan">
+                    </div>
+                    <div class="form-group">
+                        <label for="editLastName">Apellido:</label>
+                        <input type="text" id="editLastName" placeholder="Ej: Pérez">
+                    </div>
+                    <div class="form-group">
+                        <label for="editAge">Edad:</label>
+                        <input type="number" id="editAge" placeholder="Ej: 30" min="0" max="120">
+                    </div>
+                    <div class="form-group">
+                        <label for="editSex">Género:</label>
+                        <select id="editSex">
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                            <option value="O">Otro</option>
+                        </select>
+                    </div>
                 </div>
             </div>
+
+            <!-- Formulario de edición para Profesiones -->
+            <div id="editProfessionForm" class="edit-form" style="display: none;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="editId">ID:</label>
+                        <input type="number" id="editId" readonly style="background: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label for="editName">Nombre:</label>
+                        <input type="text" id="editName" placeholder="Ej: Ingeniero de Software">
+                    </div>
+                    <div class="form-group">
+                        <label for="editDescription">Descripción:</label>
+                        <input type="text" id="editDescription" placeholder="Ej: Desarrollo de aplicaciones">
+                    </div>
+                </div>
+            </div>
+
             <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
                 <button onclick="closeEditModal()" style="background: #6c757d;">Cancelar</button>
-                <button onclick="updatePerson()">💾 Guardar Cambios</button>
+                <button onclick="updateItem()">💾 Guardar Cambios</button>
             </div>
         </div>
     </div>
@@ -580,7 +243,7 @@
             <div class="confirm-icon">⚠️</div>
             <div class="confirm-title">¿Confirmar eliminación?</div>
             <div class="confirm-message" id="confirmMessage">
-                ¿Está seguro de que desea eliminar esta persona? Esta acción no se puede deshacer.
+                ¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.
             </div>
             <div class="confirm-actions">
                 <button class="btn-cancel" onclick="cancelDelete()">Cancelar</button>
@@ -589,543 +252,6 @@
         </div>
     </div>
 
-    <script>
-        const API_BASE = '/api/v1/persona';
-        
-        // Mostrar mensajes
-        function showMessage(message, type = 'info') {
-            const messagesDiv = document.getElementById('messages');
-            const messageElement = document.createElement('div');
-            messageElement.className = type;
-            messageElement.textContent = message;
-            messagesDiv.appendChild(messageElement);
-            
-            setTimeout(() => {
-                messageElement.remove();
-            }, 5000);
-        }
-
-        // Mostrar/ocultar loading
-        function setLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-        }
-
-        // Extraer ID correcto de una persona
-        function getPersonId(person) {
-            console.log('=== GET PERSON ID ===');
-            console.log('Full person object:', person);
-            console.log('person._id:', person._id);
-            console.log('person.id:', person.id);
-            console.log('person.dni:', person.dni);
-            console.log('person.identification:', person.identification);
-            console.log('person.cc:', person.cc);
-
-            // Buscar en orden de prioridad específico
-            const id = person._id || person.id || person.dni || person.identification || person.cc;
-            
-            console.log('Getting ID from person object:', person);
-            console.log('Extracted ID value:', id, 'Type:', typeof id);
-            
-            // Verificar que sea válido
-            if (!id || id === 'null' || id === 'undefined' || id === '' || String(id).trim() === '') {
-                console.error('Invalid ID found:', id);
-                return null;
-            }
-            
-            return String(id).trim();
-        }
-
-        // Cargar personas de una base de datos
-        async function loadPersons() {
-            const database = document.getElementById('database').value;
-            setLoading(true);
-            
-            try {
-                const response = await fetch(`${API_BASE}/${database}`);
-                if (!response.ok) {
-                    throw new Error(`Error ${response.status}: ${response.statusText}`);
-                }
-                
-                const persons = await response.json();
-                console.log(`Persons loaded from ${database}:`, persons);
-                
-                displayPersons(persons, database);
-                updateStats(persons, database);
-                showMessage(`✅ Cargadas ${persons.length} personas desde ${database}`, 'success');
-            } catch (error) {
-                console.error('Error:', error);
-                showMessage(`❌ Error al cargar datos: ${error.message}`, 'error');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        // Cargar de ambas bases de datos
-        async function loadBothDatabases() {
-            setLoading(true);
-            
-            try {
-                const [mariaResponse, mongoResponse] = await Promise.all([
-                    fetch(`${API_BASE}/MARIA`),
-                    fetch(`${API_BASE}/MONGO`)
-                ]);
-
-                const mariaPersons = mariaResponse.ok ? await mariaResponse.json() : [];
-                const mongoPersons = mongoResponse.ok ? await mongoResponse.json() : [];
-                
-                console.log('=== MARIA RESPONSE ===', mariaPersons);
-                console.log('=== MONGO RESPONSE ===', mongoPersons);
-                
-                const allPersons = [
-                    ...mariaPersons.map(p => ({...p, database: 'MariaDB'})),
-                    ...mongoPersons.map(p => ({...p, database: 'MongoDB'}))
-                ];
-                
-                console.log('=== COMBINED PERSONS ===', allPersons);
-                
-                displayPersons(allPersons, 'BOTH');
-                updateStatsFromBoth(mariaPersons, mongoPersons);
-                showMessage(`✅ Cargadas ${allPersons.length} personas total (${mariaPersons.length} MariaDB, ${mongoPersons.length} MongoDB)`, 'success');
-            } catch (error) {
-                console.error('Error:', error);
-                showMessage(`❌ Error al cargar datos: ${error.message}`, 'error');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        // Mostrar personas en la interfaz
-        function displayPersons(persons, source) {
-            console.log('=== DISPLAY PERSONS ===');
-            console.log('Persons array:', persons);
-            console.log('Source:', source);
-            console.log('First person example:', persons && persons.length > 0 ? persons[0] : 'No persons');
-
-            const container = document.getElementById('persons-list');
-            
-            if (!persons || persons.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No hay personas registradas</p>';
-                return;
-            }
-            
-            container.innerHTML = persons.map(person => {
-                const personId = getPersonId(person);
-                console.log('Person object:', person);
-                console.log('Extracted personId:', personId);
-                // Validar que el ID no sea null o undefined
-                if (!personId || personId === 'undefined' || personId === 'null') {
-                    console.error('Invalid person ID:', person);
-                    return ''; // Skip this person
-                }
-                const personFirstName = (person.firstName || person.nombre || 'Sin nombre').replace(/'/g, "&apos;");
-                const personLastName = (person.lastName || person.apellido || 'Sin apellido').replace(/'/g, "&apos;");
-                const personAge = person.age || person.edad || 'No especificada';
-                const personSex = person.sex || person.genero || 'M';
-                const personDatabase = person.database || source;
-                
-                console.log('Displaying person:', { personId, personFirstName, personLastName, personAge, personSex, personDatabase });
-
-                // Validar que el personId sea válido antes de crear la tarjeta
-                if (!personId || personId === 'null' || personId === 'undefined') {
-                    console.error('Skipping person with invalid ID:', person);
-                    return ''; // Skip esta persona
-                }
-                
-                return `
-                    <div class="person-card">
-                        <div class="person-id">ID: ${personId}</div>
-                        <div class="person-name">${personFirstName} ${personLastName}</div>
-                        <div class="person-details">
-                            <strong>Edad:</strong> ${personAge}<br>
-                            <strong>Género:</strong> ${getGenderText(personSex)}
-                        </div>
-                        <span class="database-badge ${personDatabase === 'MariaDB' ? 'maria-badge' : 'mongo-badge'}">
-                            ${personDatabase}
-                        </span>
-                        <div class="person-actions">
-                            <button class="btn-small btn-edit" onclick="openEditModal('${personId}', '${personFirstName}', '${personLastName}', '${personAge}', '${personSex}', '${personDatabase}')">
-                                ✏️ Editar
-                            </button>
-                            <button class="btn-small btn-delete" onclick="handleDeleteClick('${personId}', '${personDatabase}')" data-person-id="${personId}" data-person-db="${personDatabase}">
-                                🗑️ Eliminar
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function handleDeleteClick(id, database) {
-            console.log('=== HANDLE DELETE CLICK ===');
-            console.log('Received ID:', id, 'Type:', typeof id);
-            console.log('Received Database:', database, 'Type:', typeof database);
-            
-            // Validar ID
-            if (!id || id === 'null' || id === 'undefined' || String(id).trim() === '' || String(id).trim() === 'null') {
-                console.error('Invalid ID for delete:', id);
-                showMessage('❌ Error: ID de persona no válido para eliminar', 'error');
-                return;
-            }
-            
-            // Validar database
-            if (!database || database === 'null' || database === 'undefined' || String(database).trim() === '' || String(database).trim() === 'null') {
-                console.error('Invalid database for delete:', database);
-                showMessage('❌ Error: Base de datos no válida para eliminar', 'error');
-                return;
-            }
-            
-            // Validar que sea numérico
-            const numericId = String(id).trim();
-            if (isNaN(numericId) || numericId === '') {
-                console.error('ID is not numeric:', numericId);
-                showMessage('❌ Error: ID debe ser numérico', 'error');
-                return;
-            }
-            
-            console.log('Proceeding with delete - ID:', numericId, 'Database:', database);
-            deletePerson(numericId, database);
-        }
-
-        // Obtener texto del género
-        function getGenderText(sex) {
-            switch(sex) {
-                case 'M': case 'MALE': return 'Masculino';
-                case 'F': case 'FEMALE': return 'Femenino';
-                case 'O': case 'OTHER': return 'Otro';
-                default: return 'No especificado';
-            }
-        }
-
-
-
-        // Actualizar estadísticas
-        function updateStats(persons, database) {
-            const total = persons.length;
-            document.getElementById('totalPersons').textContent = total;
-            
-            if (database === 'MARIA') {
-                document.getElementById('mariaCount').textContent = total;
-                document.getElementById('mongoCount').textContent = '0';
-            } else if (database === 'MONGO') {
-                document.getElementById('mongoCount').textContent = total;
-                document.getElementById('mariaCount').textContent = '0';
-            }
-        }
-
-        // Actualizar estadísticas desde ambas BD
-        function updateStatsFromBoth(mariaPersons, mongoPersons) {
-            document.getElementById('mariaCount').textContent = mariaPersons.length;
-            document.getElementById('mongoCount').textContent = mongoPersons.length;
-            document.getElementById('totalPersons').textContent = mariaPersons.length + mongoPersons.length;
-        }
-
-        // Crear nueva persona
-        async function createPerson() {
-            const formData = {
-                dni: document.getElementById('dni').value,
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                age: document.getElementById('age').value,
-                sex: document.getElementById('sex').value,
-                database: document.getElementById('createDatabase').value
-            };
-
-            // Validaciones básicas
-            if (!formData.dni || !formData.firstName || !formData.lastName) {
-                showMessage('❌ Por favor complete los campos obligatorios (ID, Nombre, Apellido)', 'error');
-                return;
-            }
-
-            try {
-                setLoading(true);
-                const response = await fetch(API_BASE, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error ${response.status}: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                showMessage(`✅ Persona creada exitosamente en ${formData.database}`, 'success');
-                
-                // Limpiar formulario
-                document.getElementById('dni').value = '';
-                document.getElementById('firstName').value = '';
-                document.getElementById('lastName').value = '';
-                document.getElementById('age').value = '';
-                
-                // Recargar datos
-                loadBothDatabases();
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showMessage(`❌ Error al crear persona: ${error.message}`, 'error');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        // Variables para edición y eliminación
-        let currentEditId = null;
-        let currentDeleteId = null;
-        let currentDeleteDatabase = null;
-        console.log('Global delete variables initialized:', {currentDeleteId, currentDeleteDatabase});
-
-
-        // Abrir modal de edición
-        function openEditModal(id, firstName, lastName, age, sex, database) {
-            console.log('Opening edit modal with:', { id, firstName, lastName, age, sex, database });
-            currentEditId = id;
-            document.getElementById('editDni').value = id;
-            document.getElementById('editFirstName').value = firstName || '';
-            document.getElementById('editLastName').value = lastName || '';
-            document.getElementById('editAge').value = age && age !== 'null' && age !== 'undefined' && age !== 'No especificada' ? age : '';
-            document.getElementById('editSex').value = sex || 'M';
-            document.getElementById('editDatabase').value = database === 'MariaDB' ? 'MARIA' : 'MONGO';
-            document.getElementById('editModal').style.display = 'block';
-        }
-
-        // Cerrar modal de edición
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-            currentEditId = null;
-        }
-
-        // Actualizar persona
-        async function updatePerson() {
-            if (!currentEditId) {
-                showMessage('❌ Error: No hay persona seleccionada para editar', 'error');
-                return;
-            }
-
-            const formData = {
-                dni: currentEditId,
-                firstName: document.getElementById('editFirstName').value,
-                lastName: document.getElementById('editLastName').value,
-                age: document.getElementById('editAge').value,
-                sex: document.getElementById('editSex').value,
-                database: document.getElementById('editDatabase').value
-            };
-
-            // Validaciones básicas
-            if (!formData.firstName || !formData.lastName) {
-                showMessage('❌ Por favor complete los campos obligatorios (Nombre, Apellido)', 'error');
-                return;
-            }
-
-            try {
-                setLoading(true);
-                const response = await fetch(`${API_BASE}/${currentEditId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Error ${response.status}: ${errorText}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.status && result.status.startsWith('ERROR')) {
-                    throw new Error(result.status);
-                }
-
-                showMessage(`✅ Persona actualizada exitosamente en ${formData.database}`, 'success');
-                closeEditModal();
-                
-                // Recargar datos
-                loadBothDatabases();
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showMessage(`❌ Error al actualizar persona: ${error.message}`, 'error');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        // Eliminar persona - Mostrar modal de confirmación
-        function deletePerson(id, database) {
-            console.log('=== DELETE PERSON ===');
-            console.log('ID received:', id, 'Type:', typeof id);
-            console.log('Database received:', database, 'Type:', typeof database);
-            
-            // Asegurar que los valores sean strings válidos
-            const cleanId = String(id).trim();
-            const cleanDatabase = String(database).trim();
-            
-            console.log('Cleaned ID:', cleanId);
-            console.log('Cleaned Database:', cleanDatabase);
-            
-            // Validar antes de asignar
-            if (!cleanId || cleanId === 'null' || cleanId === 'undefined') {
-                console.error('Cannot set currentDeleteId - invalid value:', cleanId);
-                showMessage('❌ Error: ID no válido', 'error');
-                return;
-            }
-            
-            if (!cleanDatabase || cleanDatabase === 'null' || cleanDatabase === 'undefined') {
-                console.error('Cannot set currentDeleteDatabase - invalid value:', cleanDatabase);
-                showMessage('❌ Error: Base de datos no válida', 'error');
-                return;
-            }
-            
-            // Asignar a variables globales
-            currentDeleteId = cleanId;
-            currentDeleteDatabase = cleanDatabase === 'MariaDB' ? 'MARIA' : 'MONGO';
-            
-            console.log('Global vars set - currentDeleteId:', currentDeleteId);
-            console.log('Global vars set - currentDeleteDatabase:', currentDeleteDatabase);
-            
-            // Verificar que se asignaron correctamente
-            if (!currentDeleteId || !currentDeleteDatabase) {
-                console.error('Failed to set global delete variables');
-                showMessage('❌ Error: No se pudieron establecer los datos para eliminar', 'error');
-                return;
-            }
-            
-            const message = `¿Está seguro de que desea eliminar la persona con ID ${currentDeleteId} de ${cleanDatabase}?`;
-            document.getElementById('confirmMessage').textContent = message;
-            document.getElementById('confirmModal').style.display = 'block';
-        }
-
-        function handleDelete(id, database) {
-            console.log('handleDelete received:', { id, database, id_type: typeof id });
-            
-            // Si el ID es null, undefined, o string "null", no proceder
-            if (id === null || id === undefined || id === 'null' || id === 'undefined' || !id) {
-                console.error('Cannot delete person with invalid ID:', id);
-                showMessage('❌ Error: No se puede eliminar persona sin ID válido', 'error');
-                return;
-            }
-        
-            deletePerson(id, database);
-        }
-
-        // Cerrar modal de confirmación
-        function closeConfirmModal() {
-            console.log('=== CLOSE CONFIRM MODAL ===');
-            console.log('currentDeleteId before close:', currentDeleteId);
-            console.log('currentDeleteDatabase before close:', currentDeleteDatabase);
-            
-            document.getElementById('confirmModal').style.display = 'none';
-            
-            // NO limpiar las variables aquí - solo cuando se cancele explícitamente
-            // currentDeleteId = null;
-            // currentDeleteDatabase = null;
-        }
-
-        function cancelDelete() {
-            console.log('=== CANCEL DELETE ===');
-            currentDeleteId = null;
-            currentDeleteDatabase = null;
-            closeConfirmModal();
-        }
-
-        // Confirmar eliminación
-        async function confirmDelete() {
-            console.log('=== CONFIRM DELETE START ===');
-            console.log('currentDeleteId at start:', currentDeleteId, 'Type:', typeof currentDeleteId);
-            console.log('currentDeleteDatabase at start:', currentDeleteDatabase, 'Type:', typeof currentDeleteDatabase);
-            
-            // Verificación adicional de las variables globales
-            if (!currentDeleteId || currentDeleteId === 'null' || currentDeleteId === 'undefined') {
-                console.error('currentDeleteId is invalid:', currentDeleteId);
-                showMessage('❌ Error: ID de eliminación perdido', 'error');
-                closeConfirmModal();
-                return;
-            }
-            
-            if (!currentDeleteDatabase || currentDeleteDatabase === 'null' || currentDeleteDatabase === 'undefined') {
-                console.error('currentDeleteDatabase is invalid:', currentDeleteDatabase);
-                showMessage('❌ Error: Base de datos de eliminación perdida', 'error');
-                closeConfirmModal();
-                return;
-            }
-            
-            try {
-                setLoading(true);
-                closeConfirmModal();
-
-                const deleteUrl = `${API_BASE}/${currentDeleteId}?database=${currentDeleteDatabase}`;
-                console.log('DELETE URL constructed:', deleteUrl);
-
-                const response = await fetch(deleteUrl, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                console.log('DELETE response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('DELETE error response:', errorText);
-                    throw new Error(`Error ${response.status}: ${errorText}`);
-                }
-
-                const result = await response.json();
-                console.log('DELETE result:', result);
-                
-                if (result.status && result.status.startsWith('ERROR')) {
-                    throw new Error(result.status);
-                }
-
-                showMessage(`✅ Persona con ID ${currentDeleteId} eliminada exitosamente`, 'success');
-                
-                // Recargar datos
-                loadBothDatabases();
-                
-            } catch (error) {
-                console.error('Error during delete:', error);
-                showMessage(`❌ Error al eliminar persona: ${error.message}`, 'error');
-            } finally {
-                setLoading(false);
-                // Limpiar variables al final, no antes
-                currentDeleteId = null;
-                currentDeleteDatabase = null;
-                console.log('=== CONFIRM DELETE END - Variables cleared ===');
-            }
-        }
-
-        // Cargar datos al iniciar
-        document.addEventListener('DOMContentLoaded', function() {
-            loadBothDatabases();
-        });
-
-        // Tecla Enter en formulario
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
-                if (document.getElementById('editModal').style.display === 'block') {
-                    updatePerson();
-                } else {
-                    createPerson();
-                }
-            }
-        });
-
-        // Cerrar modal al hacer clic fuera
-        window.onclick = function(event) {
-            const editModal = document.getElementById('editModal');
-            const confirmModal = document.getElementById('confirmModal');
-            
-            if (event.target === editModal) {
-                closeEditModal();
-            }
-            if (event.target === confirmModal) {
-                closeConfirmModal();
-            }
-        }
-    </script>
+    <script src="js/app.js"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import co.edu.javeriana.as.personapp.terminal.adapter.PersonaInputAdapterCli;
+import co.edu.javeriana.as.personapp.terminal.adapter.ProfessionInputAdapterCli;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -16,6 +17,9 @@ public class MenuPrincipal {
 	//Beans
 	@Autowired
 	private PersonaInputAdapterCli personaInputAdapterCli;
+	
+	@Autowired
+	private ProfessionInputAdapterCli professionInputAdapterCli;
 
 	private static final int SALIR = 0;
 	private static final int MODULO_PERSONA = 1;
@@ -25,16 +29,16 @@ public class MenuPrincipal {
 
 	//Menus
 	private final PersonaMenu personaMenu;
+	private final ProfessionMenu professionMenu;
 	private final Scanner keyboard;
 
     public MenuPrincipal() {
         this.personaMenu = new PersonaMenu();
+        this.professionMenu = new ProfessionMenu();
         this.keyboard = new Scanner(System.in);
     }
 
 	public void inicio() {
-		
-		//personaMenu = new PersonaMenu(personaInputAdapterCli);
 		boolean isValid = false;
 		do {
 			mostrarMenu();
@@ -45,16 +49,17 @@ public class MenuPrincipal {
 				break;
 			case MODULO_PERSONA:
 				personaMenu.iniciarMenu(personaInputAdapterCli, keyboard);
-				log.info("volvio");
+				log.info("volvio de personas");
 				break;
 			case MODULO_PROFESION:
-				log.warn("Implementar Menu");
+				professionMenu.iniciarMenu(professionInputAdapterCli, keyboard);
+				log.info("volvio de profesiones");
 				break;
 			case MODULO_TELEFONO:
-				log.warn("Implementar Menu");
+				log.warn("Implementar Menu de Telefonos");
 				break;
 			case MODULO_ESTUDIO:
-				log.warn("Implementar Menu");
+				log.warn("Implementar Menu de Estudios");
 				break;
 			default:
 				log.warn("La opción elegida no es válida.");
@@ -82,5 +87,4 @@ public class MenuPrincipal {
 			return leerOpcion();
 		}
 	}
-
 }
