@@ -31,28 +31,37 @@ public class PersonaControllerV1 {
 	@ResponseBody
 	@GetMapping(path = "/{database}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<PersonaResponse> personas(@PathVariable String database) {
-		log.info("Into personas REST API");
+		log.info("Into personas REST API - Database: {}", database);
 		return personaInputAdapterRest.historial(database.toUpperCase());
 	}
 	
 	@ResponseBody
 	@PostMapping(path = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public PersonaResponse crearPersona(@RequestBody PersonaRequest request) {
-		log.info("Into crearPersona REST API");
+		log.info("Into crearPersona REST API - DNI: {}", request.getDni());
 		return personaInputAdapterRest.crearPersona(request);
 	}
 	
 	@ResponseBody
 	@PutMapping(path = "/{identification}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public PersonaResponse actualizarPersona(@PathVariable Integer identification, @RequestBody PersonaRequest request) {
-		log.info("Into actualizarPersona REST API - ID: {}", identification);
+		log.info("Into actualizarPersona REST API - ID: {}, DNI: {}", identification, request.getDni());
 		return personaInputAdapterRest.actualizarPersona(identification, request);
 	}
 	
 	@ResponseBody
 	@DeleteMapping(path = "/{identification}", produces = MediaType.APPLICATION_JSON_VALUE)
-	public PersonaResponse eliminarPersona(@PathVariable Integer identification, @RequestParam String database) {
+	public PersonaResponse eliminarPersona(
+			@PathVariable("identification") Integer identification, 
+			@RequestParam("database") String database) {
 		log.info("Into eliminarPersona REST API - ID: {}, Database: {}", identification, database);
+		
+		// Validación adicional
+		if (identification == null) {
+			log.error("Identification is null!");
+			return new PersonaResponse("", "", "", "", "", database, "ERROR: ID no puede ser null");
+		}
+		
 		return personaInputAdapterRest.eliminarPersona(identification, database.toUpperCase());
 	}
 }

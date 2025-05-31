@@ -646,10 +646,28 @@
                 const mariaPersons = mariaResponse.ok ? await mariaResponse.json() : [];
                 const mongoPersons = mongoResponse.ok ? await mongoResponse.json() : [];
                 
+                // Debug: mostrar exactamente qué devuelve cada API
+                console.log('=== MARIA RESPONSE ===');
+                console.log('Raw response:', mariaPersons);
+                if (mariaPersons.length > 0) {
+                    console.log('First Maria person:', mariaPersons[0]);
+                    console.log('Maria person keys:', Object.keys(mariaPersons[0]));
+                }
+                
+                console.log('=== MONGO RESPONSE ===');
+                console.log('Raw response:', mongoPersons);
+                if (mongoPersons.length > 0) {
+                    console.log('First Mongo person:', mongoPersons[0]);
+                    console.log('Mongo person keys:', Object.keys(mongoPersons[0]));
+                }
+                
                 const allPersons = [
                     ...mariaPersons.map(p => ({...p, database: 'MariaDB'})),
                     ...mongoPersons.map(p => ({...p, database: 'MongoDB'}))
                 ];
+                
+                console.log('=== COMBINED PERSONS ===');
+                console.log('All persons:', allPersons);
                 
                 displayPersons(allPersons, 'BOTH');
                 updateStatsFromBoth(mariaPersons, mongoPersons);
