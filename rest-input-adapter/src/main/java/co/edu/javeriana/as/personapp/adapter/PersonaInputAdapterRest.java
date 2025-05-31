@@ -109,30 +109,59 @@ public class PersonaInputAdapterRest {
 		}
 	}
 
-	// Solo la función eliminarPersona con debug mejorado
-
 	public PersonaResponse eliminarPersona(Integer identification, String database) {
 		log.info("=== ADAPTER DELETE START ===");
 		log.info("Received identification: {}", identification);
 		log.info("Received database: {}", database);
-		log.info("identification is null: {}", identification == null);
-		log.info("identification toString: {}", identification != null ? identification.toString() : "NULL");
+		
+		// Validaciones de entrada
+		if (identification == null) {
+			log.error("Identification is null");
+			return new PersonaResponse("", "", "", "", "", database, "ERROR: ID no puede ser null");
+		}
+		
+		if (identification <= 0) {
+			log.error("Identification is not positive: {}", identification);
+			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: ID debe ser un número positivo");
+		}
+		
+		if (database == null || database.trim().isEmpty()) {
+			log.error("Database is null or empty");
+			return new PersonaResponse(identification.toString(), "", "", "", "", "", "ERROR: Database es requerido");
+		}
 		
 		try {
+			// Configurar puerto de salida
 			String dbUsed = setPersonOutputPortInjection(database);
 			log.info("Database option set to: {}", dbUsed);
 			
 			// Verificar que la persona existe antes de eliminar
 			log.info("Searching for person with ID: {}", identification);
-			Person existingPerson = personInputPort.findOne(identification);
-			log.info("Found person: {}", existingPerson != null ? existingPerson.getIdentification() : "null");
+			Person existingPerson;
+			try {
+				existingPerson = personInputPort.findOne(identification);
+				if (existingPerson == null) {
+					log.warn("Person with ID {} not found", identification);
+					return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: Persona no encontrada");
+				}
+				log.info("Found person: {} {} (ID: {})", existingPerson.getFirstName(), existingPerson.getLastName(), existingPerson.getIdentification());
+			} catch (NoExistException e) {
+				log.warn("Person with ID {} does not exist: {}", identification, e.getMessage());
+				return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: Persona no encontrada");
+			}
 			
 			// Eliminar la persona
 			log.info("Attempting to delete person with ID: {}", identification);
-			Boolean deleted = personInputPort.drop(identification);
-			log.info("Delete operation result: {}", deleted);
+			Boolean deleted;
+			try {
+				deleted = personInputPort.drop(identification);
+				log.info("Delete operation result: {}", deleted);
+			} catch (NoExistException e) {
+				log.error("Error during delete - person not found: {}", e.getMessage());
+				return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: Persona no encontrada para eliminar");
+			}
 			
-			if (deleted) {
+			if (deleted != null && deleted) {
 				// Crear respuesta de éxito con los datos de la persona eliminada
 				PersonaResponse response;
 				if(dbUsed.equalsIgnoreCase(DatabaseOption.MARIA.toString())){
@@ -149,14 +178,11 @@ public class PersonaInputAdapterRest {
 			}
 			
 		} catch (InvalidOptionException e) {
-			log.error("Invalid option: {}", e.getMessage());
-			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: " + e.getMessage());
-		} catch (NoExistException e) {
-			log.error("Person not found for deletion: {}", e.getMessage());
-			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: Persona no encontrada");
+			log.error("Invalid database option: {}", e.getMessage());
+			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: Opción de base de datos inválida: " + e.getMessage());
 		} catch (Exception e) {
 			log.error("Unexpected error during deletion: {}", e.getMessage(), e);
-			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: " + e.getMessage());
+			return new PersonaResponse(identification.toString(), "", "", "", "", database, "ERROR: Error inesperado: " + e.getMessage());
 		} finally {
 			log.info("=== ADAPTER DELETE END ===");
 		}

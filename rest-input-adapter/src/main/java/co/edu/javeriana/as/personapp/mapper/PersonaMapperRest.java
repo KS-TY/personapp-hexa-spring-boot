@@ -23,10 +23,19 @@ public class PersonaMapperRest {
 		log.debug("Mapping person to response: ID={}, Name={} {}, Database={}", 
 			person.getIdentification(), person.getFirstName(), person.getLastName(), database);
 		
-		// Asegurar que el ID no sea null y convertirlo a String
-		String personId = "0";
+		// Validar que la persona no sea null
+		if (person == null) {
+			log.error("Person object is null");
+			return new PersonaResponse("", "", "", "", "", database, "ERROR: Person is null");
+		}
+		
+		// Validar y obtener ID
+		String personId = "";
 		if (person.getIdentification() != null) {
 			personId = person.getIdentification().toString();
+		} else {
+			log.warn("Person has null identification: {}", person);
+			personId = "";
 		}
 		
 		String firstName = person.getFirstName() != null ? person.getFirstName() : "";
@@ -37,12 +46,24 @@ public class PersonaMapperRest {
 		log.debug("Mapped values: ID={}, Name={} {}, Age={}, Gender={}", 
 			personId, firstName, lastName, age, gender);
 		
-		return new PersonaResponse(personId, firstName, lastName, age, gender, database, "OK");
+		PersonaResponse response = new PersonaResponse(personId, firstName, lastName, age, gender, database, "OK");
+		
+		// Para MongoDB, asegurar que _id esté disponible
+		if ("MongoDB".equals(database)) {
+			// El _id será manejado por los métodos @JsonProperty en PersonaResponse
+			log.debug("Mapped for MongoDB with ID: {}", personId);
+		}
+		
+		return response;
 	}
 
 	public Person fromAdapterToDomain(PersonaRequest request) {
 		log.debug("Mapping request to domain: DNI={}, Name={} {}", 
 			request.getDni(), request.getFirstName(), request.getLastName());
+		
+		if (request == null) {
+			throw new IllegalArgumentException("PersonaRequest no puede ser null");
+		}
 		
 		Person person = new Person();
 		
@@ -50,15 +71,18 @@ public class PersonaMapperRest {
 		Integer identification = null;
 		try {
 			if (request.getDni() != null && !request.getDni().trim().isEmpty()) {
-				identification = Integer.valueOf(request.getDni().trim());
+				String dniStr = request.getDni().trim();
+				if (!"null".equalsIgnoreCase(dniStr) && !"undefined".equalsIgnoreCase(dniStr)) {
+					identification = Integer.valueOf(dniStr);
+				}
 			}
 		} catch (NumberFormatException e) {
 			log.warn("Invalid DNI format: {}", request.getDni());
 			throw new IllegalArgumentException("DNI debe ser un número válido: " + request.getDni());
 		}
 		
-		if (identification == null) {
-			throw new IllegalArgumentException("DNI es obligatorio y debe ser un número válido");
+		if (identification == null || identification <= 0) {
+			throw new IllegalArgumentException("DNI es obligatorio y debe ser un número positivo");
 		}
 		
 		person.setIdentification(identification);
@@ -69,9 +93,12 @@ public class PersonaMapperRest {
 		Integer age = null;
 		try {
 			if (request.getAge() != null && !request.getAge().trim().isEmpty()) {
-				age = Integer.valueOf(request.getAge().trim());
-				if (age < 0 || age > 150) {
-					throw new IllegalArgumentException("Edad debe estar entre 0 y 150 años");
+				String ageStr = request.getAge().trim();
+				if (!"null".equalsIgnoreCase(ageStr) && !"undefined".equalsIgnoreCase(ageStr)) {
+					age = Integer.valueOf(ageStr);
+					if (age < 0 || age > 150) {
+						throw new IllegalArgumentException("Edad debe estar entre 0 y 150 años");
+					}
 				}
 			}
 		} catch (NumberFormatException e) {

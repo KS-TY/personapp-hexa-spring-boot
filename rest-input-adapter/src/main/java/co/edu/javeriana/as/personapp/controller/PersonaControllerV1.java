@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,28 +52,74 @@ public class PersonaControllerV1 {
 	
 	@ResponseBody
 	@DeleteMapping(path = "/{identification}", produces = MediaType.APPLICATION_JSON_VALUE)
-	public PersonaResponse eliminarPersona(
-			@PathVariable("identification") Integer identification, 
+	public ResponseEntity<PersonaResponse> eliminarPersona(
+			@PathVariable String identification, 
 			@RequestParam("database") String database) {
 		
-		log.info("=== DELETE REQUEST ===");
-		log.info("PathVariable identification: {}", identification);
-		log.info("RequestParam database: {}", database);
-		log.info("Identification type: {}", identification != null ? identification.getClass().getSimpleName() : "null");
+		log.info("=== DELETE CONTROLLER START ===");
+		log.info("Raw PathVariable identification: '{}'", identification);
+		log.info("RequestParam database: '{}'", database);
 		
-		// Validación adicional con logging detallado
-		if (identification == null) {
-			log.error("CRITICAL ERROR: Identification is null!");
-			log.error("This means the path variable {identification} was not properly extracted");
-			return new PersonaResponse("", "", "", "", "", database, "ERROR: ID no puede ser null");
+		// Validaciones de entrada
+		if (identification == null || identification.trim().isEmpty()) {
+			log.error("Identification is null or empty");
+			PersonaResponse errorResponse = new PersonaResponse("", "", "", "", "", database, "ERROR: ID es requerido");
+			return ResponseEntity.badRequest().body(errorResponse);
 		}
 		
-		log.info("Processing delete for ID: {} in database: {}", identification, database);
+		// Validar que no sea el string "null"
+		if ("null".equalsIgnoreCase(identification.trim())) {
+			log.error("Received string 'null' as identification");
+			PersonaResponse errorResponse = new PersonaResponse("", "", "", "", "", database, "ERROR: ID no puede ser 'null'");
+			return ResponseEntity.badRequest().body(errorResponse);
+		}
 		
-		PersonaResponse response = personaInputAdapterRest.eliminarPersona(identification, database.toUpperCase());
+		// Validar que sea un número válido
+		Integer personId;
+		try {
+			personId = Integer.valueOf(identification.trim());
+			log.info("Parsed identification to Integer: {}", personId);
+		} catch (NumberFormatException e) {
+			log.error("Invalid number format for identification: '{}'", identification);
+			PersonaResponse errorResponse = new PersonaResponse(identification, "", "", "", "", database, "ERROR: ID debe ser un número válido");
+			return ResponseEntity.badRequest().body(errorResponse);
+		}
 		
-		log.info("Delete response: {}", response != null ? response.getStatus() : "null response");
+		// Validar base de datos
+		if (database == null || database.trim().isEmpty()) {
+			log.error("Database parameter is null or empty");
+			PersonaResponse errorResponse = new PersonaResponse(identification, "", "", "", "", "", "ERROR: Database es requerido");
+			return ResponseEntity.badRequest().body(errorResponse);
+		}
 		
-		return response;
+		String dbUpper = database.toUpperCase().trim();
+		if (!dbUpper.equals("MARIA") && !dbUpper.equals("MONGO")) {
+			log.error("Invalid database option: '{}'", database);
+			PersonaResponse errorResponse = new PersonaResponse(identification, "", "", "", "", database, "ERROR: Database debe ser MARIA o MONGO");
+			return ResponseEntity.badRequest().body(errorResponse);
+		}
+		
+		log.info("Processing delete for ID: {} in database: {}", personId, dbUpper);
+		
+		try {
+			PersonaResponse response = personaInputAdapterRest.eliminarPersona(personId, dbUpper);
+			
+			log.info("Delete response status: {}", response != null ? response.getStatus() : "null response");
+			
+			if (response != null && response.getStatus() != null && response.getStatus().startsWith("ERROR")) {
+				log.warn("Delete operation failed: {}", response.getStatus());
+				return ResponseEntity.badRequest().body(response);
+			}
+			
+			log.info("Delete operation successful");
+			return ResponseEntity.ok(response);
+			
+		} catch (Exception e) {
+			log.error("Unexpected error during delete operation", e);
+			PersonaResponse errorResponse = new PersonaResponse(identification, "", "", "", "", database, "ERROR: " + e.getMessage());
+			return ResponseEntity.internalServerError().body(errorResponse);
+		} finally {
+			log.info("=== DELETE CONTROLLER END ===");
+		}
 	}
 }

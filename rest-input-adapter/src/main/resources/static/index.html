@@ -583,7 +583,7 @@
                 ¿Está seguro de que desea eliminar esta persona? Esta acción no se puede deshacer.
             </div>
             <div class="confirm-actions">
-                <button class="btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
+                <button class="btn-cancel" onclick="cancelDelete()">Cancelar</button>
                 <button class="btn-confirm" onclick="confirmDelete()">🗑️ Eliminar</button>
             </div>
         </div>
@@ -612,8 +612,27 @@
 
         // Extraer ID correcto de una persona
         function getPersonId(person) {
-            // Priorizar _id para MongoDB, luego otros campos
-            return person._id || person.id || person.dni || person.identification || person.cc;
+            console.log('=== GET PERSON ID ===');
+            console.log('Full person object:', person);
+            console.log('person._id:', person._id);
+            console.log('person.id:', person.id);
+            console.log('person.dni:', person.dni);
+            console.log('person.identification:', person.identification);
+            console.log('person.cc:', person.cc);
+
+            // Buscar en orden de prioridad específico
+            const id = person._id || person.id || person.dni || person.identification || person.cc;
+            
+            console.log('Getting ID from person object:', person);
+            console.log('Extracted ID value:', id, 'Type:', typeof id);
+            
+            // Verificar que sea válido
+            if (!id || id === 'null' || id === 'undefined' || id === '' || String(id).trim() === '') {
+                console.error('Invalid ID found:', id);
+                return null;
+            }
+            
+            return String(id).trim();
         }
 
         // Cargar personas de una base de datos
@@ -677,6 +696,11 @@
 
         // Mostrar personas en la interfaz
         function displayPersons(persons, source) {
+            console.log('=== DISPLAY PERSONS ===');
+            console.log('Persons array:', persons);
+            console.log('Source:', source);
+            console.log('First person example:', persons && persons.length > 0 ? persons[0] : 'No persons');
+
             const container = document.getElementById('persons-list');
             
             if (!persons || persons.length === 0) {
@@ -686,6 +710,13 @@
             
             container.innerHTML = persons.map(person => {
                 const personId = getPersonId(person);
+                console.log('Person object:', person);
+                console.log('Extracted personId:', personId);
+                // Validar que el ID no sea null o undefined
+                if (!personId || personId === 'undefined' || personId === 'null') {
+                    console.error('Invalid person ID:', person);
+                    return ''; // Skip this person
+                }
                 const personFirstName = (person.firstName || person.nombre || 'Sin nombre').replace(/'/g, "&apos;");
                 const personLastName = (person.lastName || person.apellido || 'Sin apellido').replace(/'/g, "&apos;");
                 const personAge = person.age || person.edad || 'No especificada';
@@ -693,6 +724,12 @@
                 const personDatabase = person.database || source;
                 
                 console.log('Displaying person:', { personId, personFirstName, personLastName, personAge, personSex, personDatabase });
+
+                // Validar que el personId sea válido antes de crear la tarjeta
+                if (!personId || personId === 'null' || personId === 'undefined') {
+                    console.error('Skipping person with invalid ID:', person);
+                    return ''; // Skip esta persona
+                }
                 
                 return `
                     <div class="person-card">
@@ -706,16 +743,47 @@
                             ${personDatabase}
                         </span>
                         <div class="person-actions">
-                            <button class="btn-small btn-edit" onclick="openEditModal(${personId}, '${personFirstName}', '${personLastName}', '${personAge}', '${personSex}', '${personDatabase}')">
+                            <button class="btn-small btn-edit" onclick="openEditModal('${personId}', '${personFirstName}', '${personLastName}', '${personAge}', '${personSex}', '${personDatabase}')">
                                 ✏️ Editar
                             </button>
-                            <button class="btn-small btn-delete" onclick="deletePerson(${personId}, '${personDatabase}')">
+                            <button class="btn-small btn-delete" onclick="handleDeleteClick('${personId}', '${personDatabase}')" data-person-id="${personId}" data-person-db="${personDatabase}">
                                 🗑️ Eliminar
                             </button>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function handleDeleteClick(id, database) {
+            console.log('=== HANDLE DELETE CLICK ===');
+            console.log('Received ID:', id, 'Type:', typeof id);
+            console.log('Received Database:', database, 'Type:', typeof database);
+            
+            // Validar ID
+            if (!id || id === 'null' || id === 'undefined' || String(id).trim() === '' || String(id).trim() === 'null') {
+                console.error('Invalid ID for delete:', id);
+                showMessage('❌ Error: ID de persona no válido para eliminar', 'error');
+                return;
+            }
+            
+            // Validar database
+            if (!database || database === 'null' || database === 'undefined' || String(database).trim() === '' || String(database).trim() === 'null') {
+                console.error('Invalid database for delete:', database);
+                showMessage('❌ Error: Base de datos no válida para eliminar', 'error');
+                return;
+            }
+            
+            // Validar que sea numérico
+            const numericId = String(id).trim();
+            if (isNaN(numericId) || numericId === '') {
+                console.error('ID is not numeric:', numericId);
+                showMessage('❌ Error: ID debe ser numérico', 'error');
+                return;
+            }
+            
+            console.log('Proceeding with delete - ID:', numericId, 'Database:', database);
+            deletePerson(numericId, database);
         }
 
         // Obtener texto del género
@@ -727,6 +795,8 @@
                 default: return 'No especificado';
             }
         }
+
+
 
         // Actualizar estadísticas
         function updateStats(persons, database) {
@@ -804,6 +874,8 @@
         let currentEditId = null;
         let currentDeleteId = null;
         let currentDeleteDatabase = null;
+        console.log('Global delete variables initialized:', {currentDeleteId, currentDeleteDatabase});
+
 
         // Abrir modal de edición
         function openEditModal(id, firstName, lastName, age, sex, database) {
@@ -883,55 +955,109 @@
 
         // Eliminar persona - Mostrar modal de confirmación
         function deletePerson(id, database) {
-            console.log('deletePerson called with:', { id, database });
+            console.log('=== DELETE PERSON ===');
+            console.log('ID received:', id, 'Type:', typeof id);
+            console.log('Database received:', database, 'Type:', typeof database);
             
-            // Validar que el ID no esté vacío o sea undefined/null
-            if (!id || id === 'undefined' || id === 'null' || id === 'N/A') {
-                showMessage('❌ Error: ID de persona no válido', 'error');
-                console.error('Invalid person ID:', id);
+            // Asegurar que los valores sean strings válidos
+            const cleanId = String(id).trim();
+            const cleanDatabase = String(database).trim();
+            
+            console.log('Cleaned ID:', cleanId);
+            console.log('Cleaned Database:', cleanDatabase);
+            
+            // Validar antes de asignar
+            if (!cleanId || cleanId === 'null' || cleanId === 'undefined') {
+                console.error('Cannot set currentDeleteId - invalid value:', cleanId);
+                showMessage('❌ Error: ID no válido', 'error');
                 return;
             }
             
-            currentDeleteId = id;
-            currentDeleteDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO';
+            if (!cleanDatabase || cleanDatabase === 'null' || cleanDatabase === 'undefined') {
+                console.error('Cannot set currentDeleteDatabase - invalid value:', cleanDatabase);
+                showMessage('❌ Error: Base de datos no válida', 'error');
+                return;
+            }
             
-            console.log('Setting delete vars:', { currentDeleteId, currentDeleteDatabase });
+            // Asignar a variables globales
+            currentDeleteId = cleanId;
+            currentDeleteDatabase = cleanDatabase === 'MariaDB' ? 'MARIA' : 'MONGO';
             
-            const message = `¿Está seguro de que desea eliminar la persona con ID ${id} de ${database}?`;
+            console.log('Global vars set - currentDeleteId:', currentDeleteId);
+            console.log('Global vars set - currentDeleteDatabase:', currentDeleteDatabase);
+            
+            // Verificar que se asignaron correctamente
+            if (!currentDeleteId || !currentDeleteDatabase) {
+                console.error('Failed to set global delete variables');
+                showMessage('❌ Error: No se pudieron establecer los datos para eliminar', 'error');
+                return;
+            }
+            
+            const message = `¿Está seguro de que desea eliminar la persona con ID ${currentDeleteId} de ${cleanDatabase}?`;
             document.getElementById('confirmMessage').textContent = message;
             document.getElementById('confirmModal').style.display = 'block';
         }
 
+        function handleDelete(id, database) {
+            console.log('handleDelete received:', { id, database, id_type: typeof id });
+            
+            // Si el ID es null, undefined, o string "null", no proceder
+            if (id === null || id === undefined || id === 'null' || id === 'undefined' || !id) {
+                console.error('Cannot delete person with invalid ID:', id);
+                showMessage('❌ Error: No se puede eliminar persona sin ID válido', 'error');
+                return;
+            }
+        
+            deletePerson(id, database);
+        }
+
         // Cerrar modal de confirmación
         function closeConfirmModal() {
+            console.log('=== CLOSE CONFIRM MODAL ===');
+            console.log('currentDeleteId before close:', currentDeleteId);
+            console.log('currentDeleteDatabase before close:', currentDeleteDatabase);
+            
             document.getElementById('confirmModal').style.display = 'none';
+            
+            // NO limpiar las variables aquí - solo cuando se cancele explícitamente
+            // currentDeleteId = null;
+            // currentDeleteDatabase = null;
+        }
+
+        function cancelDelete() {
+            console.log('=== CANCEL DELETE ===');
             currentDeleteId = null;
             currentDeleteDatabase = null;
+            closeConfirmModal();
         }
 
         // Confirmar eliminación
         async function confirmDelete() {
-            console.log('confirmDelete called with:', { currentDeleteId, currentDeleteDatabase });
+            console.log('=== CONFIRM DELETE START ===');
+            console.log('currentDeleteId at start:', currentDeleteId, 'Type:', typeof currentDeleteId);
+            console.log('currentDeleteDatabase at start:', currentDeleteDatabase, 'Type:', typeof currentDeleteDatabase);
             
-            if (!currentDeleteId || !currentDeleteDatabase) {
-                showMessage('❌ Error: No hay persona seleccionada para eliminar', 'error');
-                console.error('Missing delete parameters:', { currentDeleteId, currentDeleteDatabase });
+            // Verificación adicional de las variables globales
+            if (!currentDeleteId || currentDeleteId === 'null' || currentDeleteId === 'undefined') {
+                console.error('currentDeleteId is invalid:', currentDeleteId);
+                showMessage('❌ Error: ID de eliminación perdido', 'error');
+                closeConfirmModal();
                 return;
             }
-
-            // Validar que el ID sea un número válido
-            if (isNaN(currentDeleteId)) {
-                showMessage('❌ Error: El ID debe ser un número válido', 'error');
-                console.error('Invalid ID format:', currentDeleteId);
+            
+            if (!currentDeleteDatabase || currentDeleteDatabase === 'null' || currentDeleteDatabase === 'undefined') {
+                console.error('currentDeleteDatabase is invalid:', currentDeleteDatabase);
+                showMessage('❌ Error: Base de datos de eliminación perdida', 'error');
+                closeConfirmModal();
                 return;
             }
-
+            
             try {
                 setLoading(true);
                 closeConfirmModal();
 
                 const deleteUrl = `${API_BASE}/${currentDeleteId}?database=${currentDeleteDatabase}`;
-                console.log('DELETE URL:', deleteUrl);
+                console.log('DELETE URL constructed:', deleteUrl);
 
                 const response = await fetch(deleteUrl, {
                     method: 'DELETE',
@@ -955,7 +1081,7 @@
                     throw new Error(result.status);
                 }
 
-                showMessage(`✅ Persona con ID ${currentDeleteId} eliminada exitosamente de ${currentDeleteDatabase}`, 'success');
+                showMessage(`✅ Persona con ID ${currentDeleteId} eliminada exitosamente`, 'success');
                 
                 // Recargar datos
                 loadBothDatabases();
@@ -965,8 +1091,10 @@
                 showMessage(`❌ Error al eliminar persona: ${error.message}`, 'error');
             } finally {
                 setLoading(false);
+                // Limpiar variables al final, no antes
                 currentDeleteId = null;
                 currentDeleteDatabase = null;
+                console.log('=== CONFIRM DELETE END - Variables cleared ===');
             }
         }
 

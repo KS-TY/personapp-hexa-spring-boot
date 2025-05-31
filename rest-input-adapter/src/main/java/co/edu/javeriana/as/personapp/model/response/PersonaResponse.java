@@ -27,10 +27,21 @@ public class PersonaResponse extends PersonaRequest{
 		return getDni();
 	}
 	
+	// Setter para _id para compatibilidad con MongoDB
+	@JsonProperty("_id")
+	public void set_id(String id) {
+		setDni(id);
+	}
+	
 	// Mantener aliases para compatibilidad
 	@JsonProperty("identification")
 	public String getIdentification() {
 		return getDni();
+	}
+	
+	@JsonProperty("identification")
+	public void setIdentification(String identification) {
+		setDni(identification);
 	}
 	
 	@JsonProperty("id")
@@ -38,8 +49,24 @@ public class PersonaResponse extends PersonaRequest{
 		return getDni();
 	}
 	
+	@JsonProperty("id")
+	public void setId(String id) {
+		setDni(id);
+	}
+	
 	@JsonProperty("cc")
 	public String getCc() {
 		return getDni();
+	}
+	
+	@JsonProperty("cc")
+	public void setCc(String cc) {
+		setDni(cc);
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("PersonaResponse{dni='%s', firstName='%s', lastName='%s', age='%s', sex='%s', database='%s', status='%s'}", 
+			getDni(), getFirstName(), getLastName(), getAge(), getSex(), getDatabase(), status);
 	}
 }
