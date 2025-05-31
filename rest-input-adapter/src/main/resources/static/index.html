@@ -165,6 +165,170 @@
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
+
+        .person-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #da190b;
+            transform: translateY(-1px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+
+        .modal-header h3 {
+            color: #333;
+            margin: 0;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .confirm-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+        }
+
+        .confirm-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .confirm-icon {
+            font-size: 4rem;
+            color: #f44336;
+            margin-bottom: 20px;
+        }
+
+        .confirm-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .confirm-message {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn-confirm {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirm:hover {
+            background: #da190b;
+            transform: translateY(-2px);
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #545b62;
+            transform: translateY(-2px);
+        }
         
         .person-id {
             font-size: 1.2rem;
@@ -275,7 +439,20 @@
         <div class="header">
             <h1>🧑‍💼 PersonApp</h1>
             <p>Sistema de Gestión de Personas - Arquitectura Hexagonal</p>
+        <!-- Modal para confirmar eliminación -->
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-content">
+            <div class="confirm-icon">⚠️</div>
+            <div class="confirm-title">¿Confirmar eliminación?</div>
+            <div class="confirm-message" id="confirmMessage">
+                ¿Está seguro de que desea eliminar esta persona? Esta acción no se puede deshacer.
+            </div>
+            <div class="confirm-actions">
+                <button class="btn-cancel" onclick="closeConfirmModal()">Cancelar</button>
+                <button class="btn-confirm" onclick="confirmDelete()">🗑️ Eliminar</button>
+            </div>
         </div>
+    </div>
         
         <div class="main-content">
             <!-- Estadísticas -->
@@ -363,6 +540,53 @@
         </div>
     </div>
 
+    <!-- Modal para editar persona -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Editar Persona</h3>
+                <button class="close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="editDni">Cédula:</label>
+                    <input type="number" id="editDni" readonly style="background: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label for="editFirstName">Nombre:</label>
+                    <input type="text" id="editFirstName" placeholder="Ej: Juan">
+                </div>
+                <div class="form-group">
+                    <label for="editLastName">Apellido:</label>
+                    <input type="text" id="editLastName" placeholder="Ej: Pérez">
+                </div>
+                <div class="form-group">
+                    <label for="editAge">Edad:</label>
+                    <input type="number" id="editAge" placeholder="Ej: 30" min="0" max="120">
+                </div>
+                <div class="form-group">
+                    <label for="editSex">Género:</label>
+                    <select id="editSex">
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                        <option value="O">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editDatabase">Base de datos:</label>
+                    <select id="editDatabase">
+                        <option value="MARIA">MariaDB</option>
+                        <option value="MONGO">MongoDB</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeEditModal()" style="background: #6c757d;">Cancelar</button>
+                <button onclick="updatePerson()">💾 Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api/v1/persona';
         
@@ -396,6 +620,8 @@
                 }
                 
                 const persons = await response.json();
+                console.log(`Persons loaded from ${database}:`, persons);
+                
                 displayPersons(persons, database);
                 updateStats(persons, database);
                 showMessage(`✅ Cargadas ${persons.length} personas desde ${database}`, 'success');
@@ -445,19 +671,39 @@
                 return;
             }
             
-            container.innerHTML = persons.map(person => `
-                <div class="person-card">
-                    <div class="person-id">ID: ${person.dni || person.identification || 'N/A'}</div>
-                    <div class="person-name">${person.firstName || 'Sin nombre'} ${person.lastName || 'Sin apellido'}</div>
-                    <div class="person-details">
-                        <strong>Edad:</strong> ${person.age || 'No especificada'}<br>
-                        <strong>Género:</strong> ${getGenderText(person.sex)}
+            container.innerHTML = persons.map(person => {
+                // Obtener el ID correcto desde cualquier campo disponible
+                const personId = person.dni || person.identification || person.cc || 'N/A';
+                const personFirstName = (person.firstName || 'Sin nombre').replace(/'/g, "&apos;");
+                const personLastName = (person.lastName || 'Sin apellido').replace(/'/g, "&apos;");
+                const personAge = person.age || 'No especificada';
+                const personSex = person.sex || 'M';
+                const personDatabase = person.database || source;
+                
+                console.log('Person data:', { personId, personFirstName, personLastName, personAge, personSex, personDatabase });
+                
+                return `
+                    <div class="person-card">
+                        <div class="person-id">ID: ${personId}</div>
+                        <div class="person-name">${personFirstName} ${personLastName}</div>
+                        <div class="person-details">
+                            <strong>Edad:</strong> ${personAge}<br>
+                            <strong>Género:</strong> ${getGenderText(personSex)}
+                        </div>
+                        <span class="database-badge ${personDatabase === 'MariaDB' ? 'maria-badge' : 'mongo-badge'}">
+                            ${personDatabase}
+                        </span>
+                        <div class="person-actions">
+                            <button class="btn-small btn-edit" onclick="openEditModal('${personId}', '${personFirstName}', '${personLastName}', '${personAge}', '${personSex}', '${personDatabase}')">
+                                ✏️ Editar
+                            </button>
+                            <button class="btn-small btn-delete" onclick="deletePerson('${personId}', '${personDatabase}')">
+                                🗑️ Eliminar
+                            </button>
+                        </div>
                     </div>
-                    <span class="database-badge ${person.database === 'MariaDB' ? 'maria-badge' : 'mongo-badge'}">
-                        ${person.database}
-                    </span>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Obtener texto del género
@@ -550,9 +796,195 @@
         // Tecla Enter en formulario
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
-                createPerson();
+                if (document.getElementById('editModal').style.display === 'block') {
+                    updatePerson();
+                } else {
+                    createPerson();
+                }
             }
         });
+
+        // Variables para edición y eliminación
+        let currentEditId = null;
+        let currentDeleteId = null;
+        let currentDeleteDatabase = null;
+
+        // Abrir modal de edición
+        function openEditModal(id, firstName, lastName, age, sex, database) {
+            currentEditId = id;
+            document.getElementById('editDni').value = id;
+            document.getElementById('editFirstName').value = firstName || '';
+            document.getElementById('editLastName').value = lastName || '';
+            document.getElementById('editAge').value = age && age !== 'null' && age !== 'undefined' ? age : '';
+            document.getElementById('editSex').value = sex || 'M';
+            document.getElementById('editDatabase').value = database === 'MariaDB' ? 'MARIA' : 'MONGO';
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // Cerrar modal de edición
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditId = null;
+        }
+
+        // Actualizar persona
+        async function updatePerson() {
+            if (!currentEditId) {
+                showMessage('❌ Error: No hay persona seleccionada para editar', 'error');
+                return;
+            }
+
+            const formData = {
+                dni: currentEditId,
+                firstName: document.getElementById('editFirstName').value,
+                lastName: document.getElementById('editLastName').value,
+                age: document.getElementById('editAge').value,
+                sex: document.getElementById('editSex').value,
+                database: document.getElementById('editDatabase').value
+            };
+
+            // Validaciones básicas
+            if (!formData.firstName || !formData.lastName) {
+                showMessage('❌ Por favor complete los campos obligatorios (Nombre, Apellido)', 'error');
+                return;
+            }
+
+            try {
+                setLoading(true);
+                const response = await fetch(`${API_BASE}/${currentEditId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.status && result.status.startsWith('ERROR')) {
+                    throw new Error(result.status);
+                }
+
+                showMessage(`✅ Persona actualizada exitosamente en ${formData.database}`, 'success');
+                closeEditModal();
+                
+                // Recargar datos
+                loadBothDatabases();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage(`❌ Error al actualizar persona: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Eliminar persona - Mostrar modal de confirmación
+        function deletePerson(id, database) {
+            console.log('deletePerson called with:', { id, database });
+            
+            // Validar que el ID no esté vacío o sea undefined/null
+            if (!id || id === 'undefined' || id === 'null' || id === 'N/A') {
+                showMessage('❌ Error: ID de persona no válido', 'error');
+                console.error('Invalid person ID:', id);
+                return;
+            }
+            
+            currentDeleteId = id;
+            currentDeleteDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO';
+            
+            console.log('Setting delete vars:', { currentDeleteId, currentDeleteDatabase });
+            
+            const message = `¿Está seguro de que desea eliminar la persona con ID ${id} de ${database}?`;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmModal').style.display = 'block';
+        }
+
+        // Cerrar modal de confirmación
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+            currentDeleteId = null;
+            currentDeleteDatabase = null;
+        }
+
+        // Confirmar eliminación
+        async function confirmDelete() {
+            console.log('confirmDelete called with:', { currentDeleteId, currentDeleteDatabase });
+            
+            if (!currentDeleteId || !currentDeleteDatabase) {
+                showMessage('❌ Error: No hay persona seleccionada para eliminar', 'error');
+                console.error('Missing delete parameters:', { currentDeleteId, currentDeleteDatabase });
+                return;
+            }
+
+            // Validar que el ID sea un número válido
+            if (isNaN(currentDeleteId)) {
+                showMessage('❌ Error: El ID debe ser un número válido', 'error');
+                console.error('Invalid ID format:', currentDeleteId);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                closeConfirmModal();
+
+                const deleteUrl = `${API_BASE}/${currentDeleteId}?database=${currentDeleteDatabase}`;
+                console.log('DELETE URL:', deleteUrl);
+
+                const response = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                console.log('DELETE response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('DELETE error response:', errorText);
+                    throw new Error(`Error ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('DELETE result:', result);
+                
+                if (result.status && result.status.startsWith('ERROR')) {
+                    throw new Error(result.status);
+                }
+
+                showMessage(`✅ Persona con ID ${currentDeleteId} eliminada exitosamente de ${currentDeleteDatabase}`, 'success');
+                
+                // Recargar datos
+                loadBothDatabases();
+                
+            } catch (error) {
+                console.error('Error during delete:', error);
+                showMessage(`❌ Error al eliminar persona: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+                currentDeleteId = null;
+                currentDeleteDatabase = null;
+            }
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const editModal = document.getElementById('editModal');
+            const confirmModal = document.getElementById('confirmModal');
+            
+            if (event.target === editModal) {
+                closeEditModal();
+            }
+            if (event.target === confirmModal) {
+                closeConfirmModal();
+            }
+        }
     </script>
 </body>
 </html>

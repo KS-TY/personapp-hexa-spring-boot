@@ -69,7 +69,7 @@ echo "5. Iniciando servicios de bases de datos..."
 docker-compose up -d mariadb mongodb
 
 echo "6. Esperando que las bases de datos estén listas..."
-sleep 30
+sleep 10
 
 echo "7. Construyendo y levantando todas las aplicaciones..."
 docker-compose up --build
