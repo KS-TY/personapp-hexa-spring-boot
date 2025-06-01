@@ -18,25 +18,6 @@ const APIS = {
     phones: PHONES_API
 };
 
-// Configuración de formularios por sección
-const FORM_CONFIGS = {
-    personas: {
-        fields: ['dni', 'firstName', 'lastName', 'age', 'sex'],
-        createFields: ['dni', 'firstName', 'lastName', 'age', 'sex', 'createDatabase'],
-        editFields: ['editDni', 'editFirstName', 'editLastName', 'editAge', 'editSex']
-    },
-    professions: {
-        fields: ['id', 'name', 'description'],
-        createFields: ['id', 'name', 'description', 'createDatabase'],
-        editFields: ['editId', 'editName', 'editDescription']
-    },
-    phones: {
-        fields: ['number', 'company', 'ownerId'],
-        createFields: ['number', 'company', 'ownerId', 'createDatabase'],
-        editFields: ['editNumber', 'editCompany', 'editOwnerId']
-    }
-};
-
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -77,6 +58,11 @@ function showSection(section) {
     
     // Cargar datos de la sección
     loadBothDatabases();
+    
+    // Si es la sección de teléfonos, cargar propietarios disponibles
+    if (section === 'phones') {
+        setTimeout(() => loadAvailableOwners(), 500);
+    }
 }
 
 // Event Listeners
@@ -170,41 +156,6 @@ async function loadItems() {
     }
 }
 
-function displayPhones(phones, container) {
-    container.innerHTML = phones.map(phone => {
-        const phoneNumber = getItemId(phone) || phone.number || phone.num || 'Sin número';
-        if (!phoneNumber || phoneNumber === 'undefined' || phoneNumber === 'null') {
-            console.error('Invalid phone number:', phone);
-            return '';
-        }
-        
-        const phoneCompany = (phone.company || phone.oper || 'Sin compañía').replace(/'/g, "&apos;");
-        const phoneOwnerId = phone.ownerId || phone.duenio || 'Sin propietario';
-        const phoneDatabase = phone.database || 'MariaDB';
-        
-        return `
-            <div class="item-card">
-                <div class="item-id">📱 ${phoneNumber}</div>
-                <div class="item-name">${phoneCompany}</div>
-                <div class="item-details">
-                    <strong>Propietario ID:</strong> ${phoneOwnerId}
-                </div>
-                <span class="database-badge ${phoneDatabase === 'MariaDB' ? 'maria-badge' : 'mongo-badge'}">
-                    ${phoneDatabase}
-                </span>
-                <div class="item-actions">
-                    <button class="btn-small btn-edit" onclick="openPhoneEditModal('${phoneNumber}', '${phoneCompany}', '${phoneOwnerId}', '${phoneDatabase}')">
-                        ✏️ Editar
-                    </button>
-                    <button class="btn-small btn-delete" onclick="handleDeleteClick('${phoneNumber}', '${phoneDatabase}')">
-                        🗑️ Eliminar
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
 async function loadBothDatabases() {
     const api = APIS[currentSection];
     setLoading(true);
@@ -256,8 +207,7 @@ function displayItems(items, source) {
         displayPersonas(items, container);
     } else if (currentSection === 'professions') {
         displayProfessions(items, container);
-    }
-    else if (currentSection === 'phones') {
+    } else if (currentSection === 'phones') {
         displayPhones(items, container);
     }
 }
@@ -380,7 +330,6 @@ function getGenderText(sex) {
 }
 
 // Estadísticas
-// Actualizar la función updateStats para incluir phones
 function updateStats(items, database) {
     const total = items.length;
     
@@ -430,47 +379,7 @@ function updateStatsFromBoth(mariaItems, mongoItems) {
     }
 }
 
-// Modificar la función showSection para cargar propietarios cuando se selecciona phones
-function showSection(section) {
-    console.log('Switching to section:', section);
-    currentSection = section;
-    
-    // Actualizar navegación
-    document.querySelectorAll('.nav-button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-section="${section}"]`).classList.add('active');
-    
-    // Actualizar secciones
-    document.querySelectorAll('.section').forEach(sec => {
-        sec.classList.remove('active');
-    });
-    document.getElementById(`${section}-section`).classList.add('active');
-    
-    // Cargar datos de la sección
-    loadBothDatabases();
-    
-    // Si es la sección de teléfonos, cargar propietarios disponibles
-    if (section === 'phones') {
-        setTimeout(() => loadAvailableOwners(), 500); // Delay para que carguen las personas primero
-    }
-}
-
-// Actualizar función de inicialización para incluir phones
-function initializeApp() {
-    setupNavigation();
-    showSection('personas');
-    loadBothDatabases();
-    setupEventListeners();
-    
-    // Configurar event listener para cuando se cambie a la sección de teléfonos
-    document.querySelector('[data-section="phones"]').addEventListener('click', function() {
-        setTimeout(() => loadAvailableOwners(), 1000);
-    });
-}
-
-// Crear elemento
-// Función createItem corregida para usar IDs únicos
+// Crear elemento - FUNCIÓN SIMPLIFICADA Y CORREGIDA
 async function createItem() {
     console.log('=== CREATE ITEM START ===');
     console.log('Current section:', currentSection);
@@ -502,10 +411,15 @@ async function createItem() {
             return;
         }
     } else if (currentSection === 'phones') {
-        // Para teléfonos, redirigir a la función específica
-        console.log('Redirecting to createPhoneWithValidation for phones');
-        createPhoneWithValidation();
-        return;
+        formData.number = document.getElementById('phoneNumber').value;
+        formData.company = document.getElementById('phoneCompany').value;
+        formData.ownerId = document.getElementById('phoneOwnerId').value;
+        formData.database = document.getElementById('phoneCreateDatabase').value;
+        
+        if (!formData.number || !formData.company || !formData.ownerId || !formData.database) {
+            showMessage('❌ Por favor complete todos los campos obligatorios', 'error');
+            return;
+        }
     }
 
     console.log('=== FINAL FORM DATA ===');
@@ -552,6 +466,10 @@ async function createItem() {
             document.getElementById('professionId').value = '';
             document.getElementById('professionName').value = '';
             document.getElementById('professionDescription').value = '';
+        } else if (currentSection === 'phones') {
+            document.getElementById('phoneNumber').value = '';
+            document.getElementById('phoneCompany').value = '';
+            document.getElementById('phoneOwnerId').value = '';
         }
         
         loadBothDatabases();
@@ -566,252 +484,7 @@ async function createItem() {
     }
 }
 
-// Función específica para crear teléfonos con validación correcta
-function createPhoneWithValidation() {
-    console.log('=== CREATE PHONE WITH VALIDATION START ===');
-    
-    // Verificar que estamos en la sección correcta
-    if (currentSection !== 'phones') {
-        console.error('Not in phones section, current:', currentSection);
-        showMessage('❌ Error: No estás en la sección de teléfonos', 'error');
-        return;
-    }
-    
-    // Obtener elementos específicos para teléfonos con IDs únicos
-    const numberElement = document.getElementById('phoneNumber');
-    const companyElement = document.getElementById('phoneCompany');
-    const ownerIdElement = document.getElementById('phoneOwnerId');
-    const databaseElement = document.getElementById('phoneCreateDatabase');
-    
-    console.log('=== FORM ELEMENTS CHECK ===');
-    console.log('Number element:', numberElement ? 'FOUND' : 'NOT FOUND');
-    console.log('Company element:', companyElement ? 'FOUND' : 'NOT FOUND');
-    console.log('Owner element:', ownerIdElement ? 'FOUND' : 'NOT FOUND');
-    console.log('Database element:', databaseElement ? 'FOUND' : 'NOT FOUND');
-    
-    if (!numberElement || !companyElement || !ownerIdElement || !databaseElement) {
-        showMessage('❌ Error: No se pudieron encontrar todos los elementos del formulario', 'error');
-        console.error('Missing elements:', {
-            number: !numberElement,
-            company: !companyElement,
-            owner: !ownerIdElement,
-            database: !databaseElement
-        });
-        return;
-    }
-    
-    // Obtener valores
-    const formData = {
-        number: numberElement.value.trim(),
-        company: companyElement.value.trim(),
-        ownerId: ownerIdElement.value.trim(),
-        database: databaseElement.value.trim()
-    };
-    
-    console.log('=== FORM DATA ===');
-    console.log('Number:', formData.number);
-    console.log('Company:', formData.company);
-    console.log('Owner ID:', formData.ownerId);
-    console.log('Database (raw):', formData.database);
-    console.log('Database element selected index:', databaseElement.selectedIndex);
-    console.log('Database element options:');
-    Array.from(databaseElement.options).forEach((option, index) => {
-        console.log(`  [${index}] value: "${option.value}", text: "${option.text}", selected: ${option.selected}`);
-    });
-    
-    // Validaciones
-    if (!formData.number) {
-        showMessage('❌ Por favor ingrese el número de teléfono', 'error');
-        return;
-    }
-    
-    if (!formData.company) {
-        showMessage('❌ Por favor ingrese la compañía', 'error');
-        return;
-    }
-    
-    if (!formData.ownerId) {
-        showMessage('❌ Por favor seleccione un propietario', 'error');
-        return;
-    }
-    
-    if (!formData.database) {
-        showMessage('❌ Por favor seleccione una base de datos', 'error');
-        return;
-    }
-    
-    // Normalizar base de datos
-    formData.database = formData.database.toUpperCase();
-    
-    if (formData.database !== 'MARIA' && formData.database !== 'MONGO') {
-        showMessage('❌ Base de datos inválida. Debe ser MARIA o MONGO', 'error');
-        return;
-    }
-    
-    console.log('=== VALIDATED FORM DATA ===');
-    console.log(JSON.stringify(formData, null, 2));
-    
-    // Llamar a la función de creación
-    createPhoneItem(formData);
-}
-
-// Función separada para la creación del teléfono
-async function createPhoneItem(formData) {
-    console.log('=== CREATE PHONE ITEM START ===');
-    
-    try {
-        setLoading(true);
-        
-        const requestBody = JSON.stringify(formData);
-        console.log('Request body:', requestBody);
-        
-        const response = await fetch('/api/v1/phone', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: requestBody
-        });
-
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-            throw new Error(`Error ${response.status}: ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log('API result:', result);
-        
-        if (result.status && result.status.startsWith('ERROR')) {
-            throw new Error(result.status);
-        }
-
-        // Verificar que se creó en la base de datos correcta
-        const expectedDB = formData.database === 'MARIA' ? 'MariaDB' : 'MongoDB';
-        const actualDB = result.database;
-        
-        console.log('Expected database:', expectedDB);
-        console.log('Actual database:', actualDB);
-        
-        if (actualDB === expectedDB) {
-            showMessage(`✅ Teléfono creado exitosamente en ${actualDB}`, 'success');
-        } else {
-            showMessage(`⚠️ Teléfono creado en ${actualDB}, pero se esperaba ${expectedDB}`, 'error');
-        }
-        
-        // Limpiar formulario
-        document.getElementById('phoneNumber').value = '';
-        document.getElementById('phoneCompany').value = '';
-        document.getElementById('phoneOwnerId').value = '';
-        // No limpiar la base de datos para facilitar múltiples creaciones
-        
-        // Recargar datos
-        loadBothDatabases();
-        
-    } catch (error) {
-        console.error('Create phone error:', error);
-        showMessage(`❌ Error al crear teléfono: ${error.message}`, 'error');
-    } finally {
-        setLoading(false);
-    }
-}
-
-// Función mejorada de debug para teléfonos
-function debugPhoneForm() {
-    console.log('=== PHONE FORM DEBUG START ===');
-    
-    // Buscar elementos específicos para teléfonos
-    const elements = {
-        phoneNumber: document.getElementById('phoneNumber'),
-        phoneCompany: document.getElementById('phoneCompany'),
-        phoneOwnerId: document.getElementById('phoneOwnerId'),
-        phoneCreateDatabase: document.getElementById('phoneCreateDatabase')
-    };
-    
-    console.log('=== FORM ELEMENTS ===');
-    Object.keys(elements).forEach(key => {
-        const element = elements[key];
-        if (element) {
-            console.log(`${key}:`, {
-                id: element.id,
-                value: element.value,
-                selectedIndex: element.selectedIndex || 'N/A',
-                options: element.options ? Array.from(element.options).map(o => `${o.value}(${o.selected})`) : 'N/A'
-            });
-        } else {
-            console.log(`${key}: NOT FOUND`);
-        }
-    });
-    
-    const databaseElement = elements.phoneCreateDatabase;
-    
-    console.log('=== DATABASE ELEMENT ANALYSIS ===');
-    if (databaseElement) {
-        console.log('Using element:', databaseElement.id);
-        console.log('Current value:', databaseElement.value);
-        console.log('Selected index:', databaseElement.selectedIndex);
-        console.log('All options:');
-        Array.from(databaseElement.options).forEach((option, index) => {
-            console.log(`  [${index}] "${option.value}" - "${option.text}" (selected: ${option.selected})`);
-        });
-    } else {
-        console.error('NO DATABASE ELEMENT FOUND!');
-    }
-    
-    console.log('=== PHONE FORM DEBUG END ===');
-    
-    return {
-        elements,
-        databaseElement,
-        formValid: !!(elements.phoneNumber?.value && elements.phoneCompany?.value && elements.phoneOwnerId?.value && databaseElement?.value)
-    };
-}
-
-// Función para forzar la selección de base de datos
-function forceSelectDatabase(database) {
-    console.log('=== FORCE SELECT DATABASE ===');
-    console.log('Target database:', database);
-    
-    const databaseElement = document.getElementById('phoneCreateDatabase');
-    
-    if (databaseElement) {
-        console.log('Found database element:', databaseElement.id);
-        
-        // Buscar la opción correcta
-        let optionFound = false;
-        Array.from(databaseElement.options).forEach((option, index) => {
-            if (option.value === database) {
-                console.log(`Setting selected index to ${index} (${option.value})`);
-                databaseElement.selectedIndex = index;
-                option.selected = true;
-                optionFound = true;
-            } else {
-                option.selected = false;
-            }
-        });
-        
-        if (optionFound) {
-            // Disparar evento change
-            databaseElement.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('✅ Database selection forced to:', database);
-            console.log('Current value:', databaseElement.value);
-        } else {
-            console.error('❌ Option not found for database:', database);
-        }
-    } else {
-        console.error('❌ Database element not found');
-    }
-    
-    // Verificar resultado
-    setTimeout(() => {
-        debugPhoneForm();
-    }, 100);
-}
-
-// Función para cargar propietarios en el dropdown correcto
+// Función para cargar propietarios disponibles
 async function loadAvailableOwners() {
     if (currentSection !== 'phones') return;
     
@@ -866,57 +539,17 @@ function updateOwnerDropdown(personas) {
     console.log('Updated phone owner dropdown with', personas.length, 'persons');
 }
 
-// Función para debug del formulario de teléfonos
-function debugPhoneForm() {
-    console.log('=== PHONE FORM DEBUG ===');
-    
-    const numberField = document.getElementById('number');
-    const companyField = document.getElementById('company');
-    const ownerField = document.getElementById('ownerId');
-    const databaseField = document.getElementById('createDatabase');
-    
-    console.log('Number field:', numberField ? numberField.value : 'NOT FOUND');
-    console.log('Company field:', companyField ? companyField.value : 'NOT FOUND');
-    console.log('Owner field:', ownerField ? ownerField.value : 'NOT FOUND');
-    console.log('Database field:', databaseField ? databaseField.value : 'NOT FOUND');
-    
-    if (databaseField) {
-        console.log('Database options:');
-        for (let option of databaseField.options) {
-            console.log('  Option:', option.value, '(selected:', option.selected, ')');
-        }
-    }
-}
-
-function validatePhoneForm() {
-    console.log('=== VALIDATING PHONE FORM ===');
-    
-    debugPhoneForm();
-    
-    const number = document.getElementById('number').value;
-    const company = document.getElementById('company').value;
-    const ownerId = document.getElementById('ownerId').value;
-    const database = document.getElementById('createDatabase').value;
-    
-    console.log('Validation results:');
-    console.log('  Number valid:', !!number);
-    console.log('  Company valid:', !!company);
-    console.log('  Owner selected:', !!ownerId);
-    console.log('  Database selected:', !!database);
-    
-    return !!(number && company && ownerId && database);
-}
-
 // Modales de edición
 function openPersonaEditModal(id, firstName, lastName, age, sex, database) {
     console.log('Opening persona edit modal with:', { id, firstName, lastName, age, sex, database });
     currentEditId = id;
-    currentEditDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO'; // Recordar BD original
+    currentEditDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO';
     
     // Configurar el modal para personas
     document.getElementById('editModalTitle').textContent = '✏️ Editar Persona';
     document.getElementById('editPersonForm').style.display = 'block';
     document.getElementById('editProfessionForm').style.display = 'none';
+    document.getElementById('editPhoneForm').style.display = 'none';
     
     // Llenar los campos
     document.getElementById('editDni').value = id;
@@ -932,12 +565,13 @@ function openPersonaEditModal(id, firstName, lastName, age, sex, database) {
 function openProfessionEditModal(id, name, description, database) {
     console.log('Opening profession edit modal with:', { id, name, description, database });
     currentEditId = id;
-    currentEditDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO'; // Recordar BD original
+    currentEditDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO';
     
     // Configurar el modal para profesiones
     document.getElementById('editModalTitle').textContent = '✏️ Editar Profesión';
     document.getElementById('editPersonForm').style.display = 'none';
     document.getElementById('editProfessionForm').style.display = 'block';
+    document.getElementById('editPhoneForm').style.display = 'none';
     
     // Llenar los campos
     document.getElementById('editId').value = id;
@@ -1025,91 +659,6 @@ function closeEditModal() {
     currentEditId = null;
     currentEditDatabase = null;
 }
-
-
-// Función separada para la creación del teléfono
-async function createPhoneItem(formData) {
-    console.log('=== CREATE PHONE ITEM START ===');
-    
-    try {
-        setLoading(true);
-        
-        const requestBody = JSON.stringify(formData);
-        console.log('Request body:', requestBody);
-        
-        const response = await fetch('/api/v1/phone', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: requestBody
-        });
-
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-            throw new Error(`Error ${response.status}: ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log('API result:', result);
-        
-        if (result.status && result.status.startsWith('ERROR')) {
-            throw new Error(result.status);
-        }
-
-        // Verificar que se creó en la base de datos correcta
-        const expectedDB = formData.database === 'MARIA' ? 'MariaDB' : 'MongoDB';
-        const actualDB = result.database;
-        
-        console.log('Expected database:', expectedDB);
-        console.log('Actual database:', actualDB);
-        
-        if (actualDB === expectedDB) {
-            showMessage(`✅ Teléfono creado exitosamente en ${actualDB}`, 'success');
-        } else {
-            showMessage(`⚠️ Teléfono creado en ${actualDB}, pero se esperaba ${expectedDB}`, 'error');
-        }
-        
-        // Limpiar formulario
-        document.getElementById('number').value = '';
-        document.getElementById('company').value = '';
-        document.getElementById('ownerId').value = '';
-        // No limpiar la base de datos para facilitar múltiples creaciones
-        
-        // Recargar datos
-        loadBothDatabases();
-        
-    } catch (error) {
-        console.error('Create phone error:', error);
-        showMessage(`❌ Error al crear teléfono: ${error.message}`, 'error');
-    } finally {
-        setLoading(false);
-    }
-}
-
-// Event listener para detectar cambios en el dropdown
-document.addEventListener('DOMContentLoaded', function() {
-    // Buscar el elemento cuando la página esté lista
-    setTimeout(() => {
-        const databaseElement = document.getElementById('phoneCreateDatabase') || document.getElementById('createDatabase');
-        
-        if (databaseElement) {
-            databaseElement.addEventListener('change', function(e) {
-                console.log('Database dropdown changed to:', e.target.value);
-                console.log('Selected index:', e.target.selectedIndex);
-            });
-            
-            // Establecer valor por defecto
-            if (!databaseElement.value) {
-                databaseElement.selectedIndex = 0; // Seleccionar primera opción
-            }
-        }
-    }, 1000);
-});
 
 // Actualizar elemento
 async function updateItem() {
@@ -1211,15 +760,10 @@ function handleDeleteClick(id, database) {
         return;
     }
     
-    const numericId = String(id).trim();
-    if (isNaN(numericId) || numericId === '') {
-        console.error('ID is not numeric:', numericId);
-        showMessage('❌ Error: ID debe ser numérico', 'error');
-        return;
-    }
+    const cleanId = String(id).trim();
     
-    console.log('Proceeding with delete - ID:', numericId, 'Database:', database);
-    deleteItem(numericId, database);
+    console.log('Proceeding with delete - ID:', cleanId, 'Database:', database);
+    deleteItem(cleanId, database);
 }
 
 function deleteItem(id, database) {
@@ -1254,8 +798,12 @@ function deleteItem(id, database) {
         return;
     }
     
-    const entityType = currentSection === 'personas' ? 'persona' : 'profesión';
-    const message = `¿Está seguro de que desea eliminar la ${entityType} con ID ${currentDeleteId} de ${cleanDatabase}?`;
+    let entityType;
+    if (currentSection === 'personas') entityType = 'persona';
+    else if (currentSection === 'professions') entityType = 'profesión';
+    else if (currentSection === 'phones') entityType = 'teléfono';
+    
+    const message = `¿Está seguro de que desea eliminar ${entityType} con ID ${currentDeleteId} de ${cleanDatabase}?`;
     document.getElementById('confirmMessage').textContent = message;
     document.getElementById('confirmModal').style.display = 'block';
 }
@@ -1321,7 +869,11 @@ async function confirmDelete() {
             throw new Error(result.status);
         }
 
-        const entityType = currentSection === 'personas' ? 'Persona' : 'Profesión';
+        let entityType;
+        if (currentSection === 'personas') entityType = 'Persona';
+        else if (currentSection === 'professions') entityType = 'Profesión';
+        else if (currentSection === 'phones') entityType = 'Teléfono';
+        
         showMessage(`✅ ${entityType} con ID ${currentDeleteId} eliminada exitosamente`, 'success');
         
         loadBothDatabases();
