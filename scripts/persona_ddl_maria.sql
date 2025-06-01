@@ -6,7 +6,7 @@ DROP SCHEMA IF EXISTS `persona_db`;
 CREATE USER IF NOT EXISTS 'persona_db'@'%' IDENTIFIED BY 'persona_db';
 CREATE SCHEMA IF NOT EXISTS `persona_db`; 
 --
-GRANT EXECUTE, TRIGGER, INSERT, UPDATE, DELETE, SELECT ON `persona_db`.* TO 'persona_db'@'%'; 
+GRANT EXECUTE, TRIGGER, DROP, INSERT, UPDATE, DELETE, SELECT ON `persona_db`.* TO 'persona_db'@'%'; 
 FLUSH PRIVILEGES; 
 --
 USE `persona_db`;

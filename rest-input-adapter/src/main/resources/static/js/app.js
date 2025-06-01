@@ -128,9 +128,16 @@ function getItemId(item) {
     return String(id).trim();
 }
 
-// Carga de datos
+// Función corregida para cargar elementos según la sección activa
 async function loadItems() {
-    const database = document.getElementById('database').value;
+    // Usar el selector de base de datos correcto según la sección
+    let database;
+    if (currentSection === 'personas') {
+        database = document.getElementById('database').value;
+    } else if (currentSection === 'professions') {
+        database = document.getElementById('professionDatabase').value;
+    }
+    
     const api = APIS[currentSection];
     setLoading(true);
     
