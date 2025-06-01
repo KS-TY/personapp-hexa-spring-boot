@@ -15,3 +15,12 @@ VALUES
 	(3,'Abogado','Servicios legales y jurídicos'),
 	(4,'Profesor','Educación y enseñanza'),
 	(5,'Contador','Contabilidad y finanzas');
+
+INSERT INTO 
+	`persona_db`.`telefono`(`num`,`oper`,`duenio`) 
+VALUES
+	('3001234567','Claro',123456789),
+	('3109876543','Movistar',321654987),
+	('3157894561','Tigo',147258369),
+	('3208523697','Claro',963852741),
+	('3151478523','Movistar',987654321);

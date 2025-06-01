@@ -2,6 +2,7 @@
 
 const PERSONAS_API = '/api/v1/persona';
 const PROFESSIONS_API = '/api/v1/profession';
+const PHONES_API = '/api/v1/phone';
 
 // Variables globales
 let currentEditId = null;
@@ -13,7 +14,8 @@ let currentSection = 'personas';
 // Configuración de APIs por sección
 const APIS = {
     personas: PERSONAS_API,
-    professions: PROFESSIONS_API
+    professions: PROFESSIONS_API,
+    phones: PHONES_API
 };
 
 // Configuración de formularios por sección
@@ -27,6 +29,11 @@ const FORM_CONFIGS = {
         fields: ['id', 'name', 'description'],
         createFields: ['id', 'name', 'description', 'createDatabase'],
         editFields: ['editId', 'editName', 'editDescription', 'editDatabase']
+    },
+    phones: {
+        fields: ['number', 'company', 'ownerId'],
+        createFields: ['number', 'company', 'ownerId', 'createDatabase'],
+        editFields: ['editNumber', 'editCompany', 'editOwnerId', 'editDatabase']
     }
 };
 
@@ -213,6 +220,9 @@ function displayItems(items, source) {
     } else if (currentSection === 'professions') {
         displayProfessions(items, container);
     }
+    else if (currentSection === 'phones') {
+        displayPhones(items, container);
+    }
 }
 
 function displayPersonas(personas, container) {
@@ -288,6 +298,41 @@ function displayProfessions(professions, container) {
     }).join('');
 }
 
+function displayPhones(phones, container) {
+    container.innerHTML = phones.map(phone => {
+        const phoneNumber = getItemId(phone) || phone.number || phone.num || 'Sin número';
+        if (!phoneNumber || phoneNumber === 'undefined' || phoneNumber === 'null') {
+            console.error('Invalid phone number:', phone);
+            return '';
+        }
+        
+        const phoneCompany = (phone.company || phone.oper || 'Sin compañía').replace(/'/g, "&apos;");
+        const phoneOwnerId = phone.ownerId || phone.duenio || 'Sin propietario';
+        const phoneDatabase = phone.database || 'MariaDB';
+        
+        return `
+            <div class="item-card">
+                <div class="item-id">📱 ${phoneNumber}</div>
+                <div class="item-name">${phoneCompany}</div>
+                <div class="item-details">
+                    <strong>Propietario ID:</strong> ${phoneOwnerId}
+                </div>
+                <span class="database-badge ${phoneDatabase === 'MariaDB' ? 'maria-badge' : 'mongo-badge'}">
+                    ${phoneDatabase}
+                </span>
+                <div class="item-actions">
+                    <button class="btn-small btn-edit" onclick="openPhoneEditModal('${phoneNumber}', '${phoneCompany}', '${phoneOwnerId}', '${phoneDatabase}')">
+                        ✏️ Editar
+                    </button>
+                    <button class="btn-small btn-delete" onclick="handleDeleteClick('${phoneNumber}', '${phoneDatabase}')">
+                        🗑️ Eliminar
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 function getGenderText(sex) {
     switch(sex) {
         case 'M': case 'MALE': return 'Masculino';
@@ -340,6 +385,11 @@ async function createItem() {
     } else if (currentSection === 'professions') {
         if (!formData.id || !formData.name) {
             showMessage('❌ Por favor complete los campos obligatorios (ID, Nombre)', 'error');
+            return;
+        }
+    } else if (currentSection === 'phones') {
+        if (!formData.number || !formData.company || !formData.ownerId) {
+            showMessage('❌ Por favor complete los campos obligatorios (Número, Compañía, ID Propietario)', 'error');
             return;
         }
     }
@@ -420,10 +470,33 @@ function openProfessionEditModal(id, name, description, database) {
     document.getElementById('editModal').style.display = 'block';
 }
 
+function openPhoneEditModal(number, company, ownerId, database) {
+    console.log('Opening phone edit modal with:', { number, company, ownerId, database });
+    currentEditId = number;
+    currentEditDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO';
+    
+    // Configurar el modal para teléfonos
+    document.getElementById('editModalTitle').textContent = '✏️ Editar Teléfono';
+    document.getElementById('editPersonForm').style.display = 'none';
+    document.getElementById('editProfessionForm').style.display = 'none';
+    document.getElementById('editPhoneForm').style.display = 'block';
+    
+    // Llenar los campos
+    document.getElementById('editNumber').value = number;
+    document.getElementById('editCompany').value = company || '';
+    document.getElementById('editOwnerId').value = ownerId || '';
+    
+    // Mostrar el modal
+    document.getElementById('editModal').style.display = 'block';
+}
+
 function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
+    document.getElementById('editPersonForm').style.display = 'none';
+    document.getElementById('editProfessionForm').style.display = 'none';
+    document.getElementById('editPhoneForm').style.display = 'none';
     currentEditId = null;
-    currentEditDatabase = null; // Limpiar también la BD
+    currentEditDatabase = null;
 }
 
 // Actualizar elemento
@@ -463,7 +536,18 @@ async function updateItem() {
             showMessage('❌ Por favor complete el campo obligatorio (Nombre)', 'error');
             return;
         }
+    } else if (currentSection === 'phones') {
+        formData.number = currentEditId;
+        formData.company = document.getElementById('editCompany').value;
+        formData.ownerId = document.getElementById('editOwnerId').value;
+        formData.database = currentEditDatabase;
+        
+        if (!formData.company || !formData.ownerId) {
+            showMessage('❌ Por favor complete los campos obligatorios (Compañía, ID Propietario)', 'error');
+            return;
+        }
     }
+
 
     try {
         setLoading(true);
