@@ -38,25 +38,41 @@ public class PhoneInputAdapterRest {
     PhoneInputPort phoneInputPort;
 
     private String setPhoneOutputPortInjection(String dbOption) throws InvalidOptionException {
-        if (dbOption.equalsIgnoreCase(DatabaseOption.MARIA.toString())) {
+        log.info("=== SETTING PHONE OUTPUT PORT ===");
+        log.info("Received dbOption: '{}'", dbOption);
+        
+        if (dbOption == null || dbOption.trim().isEmpty()) {
+            throw new InvalidOptionException("Database option cannot be null or empty");
+        }
+        
+        String cleanDbOption = dbOption.trim().toUpperCase();
+        log.info("Clean dbOption: '{}'", cleanDbOption);
+        
+        if (cleanDbOption.equals("MARIA")) {
+            log.info("Setting Phone output port to MARIA");
             phoneInputPort = new PhoneUseCase(phoneOutputPortMaria);
             return DatabaseOption.MARIA.toString();
-        } else if (dbOption.equalsIgnoreCase(DatabaseOption.MONGO.toString())) {
+        } else if (cleanDbOption.equals("MONGO")) {
+            log.info("Setting Phone output port to MONGO");
             phoneInputPort = new PhoneUseCase(phoneOutputPortMongo);
             return DatabaseOption.MONGO.toString();
         } else {
-            throw new InvalidOptionException("Invalid database option: " + dbOption);
+            log.error("Invalid database option: '{}'", dbOption);
+            throw new InvalidOptionException("Invalid database option: " + dbOption + ". Must be MARIA or MONGO");
         }
     }
 
     public List<PhoneResponse> historial(String database) {
-        log.info("Into historial PhoneEntity in Input Adapter");
+        log.info("Into historial PhoneEntity in Input Adapter - Database: {}", database);
         try {
-            if (setPhoneOutputPortInjection(database).equalsIgnoreCase(DatabaseOption.MARIA.toString())) {
-                return phoneInputPort.findAll().stream().map(phoneMapperRest::fromDomainToAdapterRestMaria)
+            String usedDatabase = setPhoneOutputPortInjection(database);
+            List<Phone> phones = phoneInputPort.findAll();
+            
+            if (usedDatabase.equalsIgnoreCase(DatabaseOption.MARIA.toString())) {
+                return phones.stream().map(phoneMapperRest::fromDomainToAdapterRestMaria)
                         .collect(Collectors.toList());
             } else {
-                return phoneInputPort.findAll().stream().map(phoneMapperRest::fromDomainToAdapterRestMongo)
+                return phones.stream().map(phoneMapperRest::fromDomainToAdapterRestMongo)
                         .collect(Collectors.toList());
             }
 
@@ -67,19 +83,43 @@ public class PhoneInputAdapterRest {
     }
 
     public PhoneResponse crearPhone(PhoneRequest request) {
-        log.info("Into crearPhone PhoneEntity in Input Adapter");
+        log.info("=== CREAR PHONE START ===");
+        log.info("PhoneRequest received: {}", request);
+        log.info("Request database: '{}'", request.getDatabase());
+        log.info("Request number: '{}'", request.getNumber());
+        log.info("Request company: '{}'", request.getCompany());
+        log.info("Request ownerId: '{}'", request.getOwnerId());
+        
         try {
+            // Validar que el request tenga database
+            if (request.getDatabase() == null || request.getDatabase().trim().isEmpty()) {
+                log.error("Database field is null or empty in request");
+                return new PhoneResponse("", "", "", "", "ERROR: Database es requerido");
+            }
+            
             String database = setPhoneOutputPortInjection(request.getDatabase());
-            Phone phone = phoneInputPort.create(phoneMapperRest.fromAdapterToDomain(request));
+            log.info("Database set to: {}", database);
+            
+            Phone phone = phoneMapperRest.fromAdapterToDomain(request);
+            log.info("Phone mapped from request: Number={}, Company={}, Owner={}", 
+                phone.getNumber(), phone.getCompany(), phone.getOwner().getIdentification());
+            
+            Phone createdPhone = phoneInputPort.create(phone);
+            log.info("Phone created successfully in {}", database);
 
             if (database.equalsIgnoreCase(DatabaseOption.MARIA.toString())) {
-                return phoneMapperRest.fromDomainToAdapterRestMaria(phone);
+                return phoneMapperRest.fromDomainToAdapterRestMaria(createdPhone);
             } else {
-                return phoneMapperRest.fromDomainToAdapterRestMongo(phone);
+                return phoneMapperRest.fromDomainToAdapterRestMongo(createdPhone);
             }
         } catch (InvalidOptionException e) {
-            log.warn(e.getMessage());
+            log.error("Invalid option error: {}", e.getMessage());
             return new PhoneResponse("", "", "", "", "ERROR: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error creating phone: {}", e.getMessage(), e);
+            return new PhoneResponse("", "", "", "", "ERROR: " + e.getMessage());
+        } finally {
+            log.info("=== CREAR PHONE END ===");
         }
     }
 

@@ -44,11 +44,26 @@ public class PhoneControllerV1 {
 	}
 	
 	@ResponseBody
-	@PostMapping(path = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	public PhoneResponse crearPhone(@RequestBody PhoneRequest request) {
-		log.info("Into crearPhone REST API - Number: {}", request.getNumber());
-		return phoneInputAdapterRest.crearPhone(request);
-	}
+    @PostMapping(path = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public PhoneResponse crearPhone(@RequestBody PhoneRequest request) {
+        log.info("=== CONTROLLER CREATE PHONE START ===");
+        log.info("Request received: {}", request);
+        log.info("Request number: '{}'", request.getNumber());
+        log.info("Request company: '{}'", request.getCompany());
+        log.info("Request ownerId: '{}'", request.getOwnerId());
+        log.info("Request database: '{}'", request.getDatabase());
+        
+        if (request.getDatabase() == null || request.getDatabase().trim().isEmpty()) {
+            log.error("Database field is null or empty!");
+            PhoneResponse errorResponse = new PhoneResponse("", "", "", "", "ERROR: Database es requerido");
+            return errorResponse;
+        }
+        
+        PhoneResponse response = phoneInputAdapterRest.crearPhone(request);
+        log.info("=== CONTROLLER CREATE PHONE END ===");
+        log.info("Response: {}", response);
+        return response;
+    }
 	
 	@ResponseBody
 	@PutMapping(path = "/{number}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)

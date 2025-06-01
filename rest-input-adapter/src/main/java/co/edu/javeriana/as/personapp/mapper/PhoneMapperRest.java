@@ -46,8 +46,16 @@ public class PhoneMapperRest {
 		
 		String phoneNumber = phone.getNumber() != null ? phone.getNumber() : "";
 		String company = phone.getCompany() != null ? phone.getCompany() : "";
-		String ownerId = phone.getOwner() != null && phone.getOwner().getIdentification() != null ? 
-				phone.getOwner().getIdentification().toString() : "";
+		
+		// Obtener el ID del propietario
+		String ownerId = "";
+		if (phone.getOwner() != null && phone.getOwner().getIdentification() != null) {
+			ownerId = phone.getOwner().getIdentification().toString();
+			log.debug("Owner ID found: {}", ownerId);
+		} else {
+			log.warn("Phone owner or owner ID is null for phone: {}", phoneNumber);
+			ownerId = "0";
+		}
 		
 		log.debug("Mapped values: Number={}, Company={}, OwnerId={}", 
 			phoneNumber, company, ownerId);

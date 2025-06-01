@@ -23,17 +23,17 @@ const FORM_CONFIGS = {
     personas: {
         fields: ['dni', 'firstName', 'lastName', 'age', 'sex'],
         createFields: ['dni', 'firstName', 'lastName', 'age', 'sex', 'createDatabase'],
-        editFields: ['editDni', 'editFirstName', 'editLastName', 'editAge', 'editSex', 'editDatabase']
+        editFields: ['editDni', 'editFirstName', 'editLastName', 'editAge', 'editSex']
     },
     professions: {
         fields: ['id', 'name', 'description'],
         createFields: ['id', 'name', 'description', 'createDatabase'],
-        editFields: ['editId', 'editName', 'editDescription', 'editDatabase']
+        editFields: ['editId', 'editName', 'editDescription']
     },
     phones: {
         fields: ['number', 'company', 'ownerId'],
         createFields: ['number', 'company', 'ownerId', 'createDatabase'],
-        editFields: ['editNumber', 'editCompany', 'editOwnerId', 'editDatabase']
+        editFields: ['editNumber', 'editCompany', 'editOwnerId']
     }
 };
 
@@ -520,39 +520,68 @@ function initializeApp() {
 }
 
 // Crear elemento
+// Crear elemento - Función corregida
 async function createItem() {
+    console.log('=== CREATE ITEM START ===');
+    console.log('Current section:', currentSection);
+    
     const config = FORM_CONFIGS[currentSection];
     const api = APIS[currentSection];
     
     const formData = {};
-    config.createFields.forEach(field => {
-        const element = document.getElementById(field);
-        if (element) {
-            const key = field.replace('create', '').toLowerCase();
-            formData[key === 'database' ? 'database' : field.replace('create', '')] = element.value;
-        }
-    });
-
-    // Validaciones específicas por tipo
+    
+    // Recopilar datos del formulario según la sección
     if (currentSection === 'personas') {
+        formData.dni = document.getElementById('dni').value;
+        formData.firstName = document.getElementById('firstName').value;
+        formData.lastName = document.getElementById('lastName').value;
+        formData.age = document.getElementById('age').value;
+        formData.sex = document.getElementById('sex').value;
+        formData.database = document.getElementById('createDatabase').value;
+        
         if (!formData.dni || !formData.firstName || !formData.lastName) {
             showMessage('❌ Por favor complete los campos obligatorios (ID, Nombre, Apellido)', 'error');
             return;
         }
     } else if (currentSection === 'professions') {
+        formData.id = document.getElementById('id').value;
+        formData.name = document.getElementById('name').value;
+        formData.description = document.getElementById('description').value;
+        formData.database = document.getElementById('createDatabase').value;
+        
         if (!formData.id || !formData.name) {
             showMessage('❌ Por favor complete los campos obligatorios (ID, Nombre)', 'error');
             return;
         }
     } else if (currentSection === 'phones') {
+        formData.number = document.getElementById('number').value;
+        formData.company = document.getElementById('company').value;
+        formData.ownerId = document.getElementById('ownerId').value;
+        formData.database = document.getElementById('createDatabase').value;
+        
+        console.log('=== PHONE FORM DATA ===');
+        console.log('Number:', formData.number);
+        console.log('Company:', formData.company);
+        console.log('OwnerId:', formData.ownerId);
+        console.log('Database:', formData.database);
+        
         if (!formData.number || !formData.company || !formData.ownerId) {
-            showMessage('❌ Por favor complete los campos obligatorios (Número, Compañía, ID Propietario)', 'error');
+            showMessage('❌ Por favor complete los campos obligatorios (Número, Compañía, Propietario)', 'error');
+            return;
+        }
+        
+        if (formData.ownerId === '') {
+            showMessage('❌ Por favor seleccione un propietario', 'error');
             return;
         }
     }
 
+    console.log('=== FINAL FORM DATA ===');
+    console.log(JSON.stringify(formData, null, 2));
+
     try {
         setLoading(true);
+        
         const response = await fetch(api, {
             method: 'POST',
             headers: {
@@ -561,28 +590,54 @@ async function createItem() {
             body: JSON.stringify(formData)
         });
 
+        console.log('=== API RESPONSE ===');
+        console.log('Status:', response.status);
+        console.log('StatusText:', response.statusText);
+
         if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`Error ${response.status}: ${errorText}`);
         }
 
         const result = await response.json();
+        console.log('=== API RESULT ===');
+        console.log(JSON.stringify(result, null, 2));
+        
+        if (result.status && result.status.startsWith('ERROR')) {
+            throw new Error(result.status);
+        }
+
         showMessage(`✅ Elemento creado exitosamente en ${formData.database}`, 'success');
         
         // Limpiar formulario
-        config.createFields.forEach(field => {
-            if (field !== 'createDatabase') {
-                const element = document.getElementById(field);
-                if (element) element.value = '';
-            }
-        });
+        if (currentSection === 'personas') {
+            document.getElementById('dni').value = '';
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('age').value = '';
+            // No limpiar sex y createDatabase
+        } else if (currentSection === 'professions') {
+            document.getElementById('id').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('description').value = '';
+            // No limpiar createDatabase
+        } else if (currentSection === 'phones') {
+            document.getElementById('number').value = '';
+            document.getElementById('company').value = '';
+            document.getElementById('ownerId').value = '';
+            // No limpiar createDatabase
+        }
         
         loadBothDatabases();
         
     } catch (error) {
+        console.error('=== CREATE ERROR ===');
         console.error('Error:', error);
         showMessage(`❌ Error al crear elemento: ${error.message}`, 'error');
     } finally {
         setLoading(false);
+        console.log('=== CREATE ITEM END ===');
     }
 }
 
