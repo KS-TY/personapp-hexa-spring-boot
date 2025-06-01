@@ -57,8 +57,8 @@ public class PhoneMapperRest {
 			ownerId = "0";
 		}
 		
-		log.debug("Mapped values: Number={}, Company={}, OwnerId={}", 
-			phoneNumber, company, ownerId);
+		log.debug("Mapped values: Number={}, Company={}, OwnerId={}, Database={}", 
+			phoneNumber, company, ownerId, database);
 		
 		PhoneResponse response = new PhoneResponse(phoneNumber, company, ownerId, database, "OK");
 		
@@ -66,8 +66,9 @@ public class PhoneMapperRest {
 	}
 
 	public Phone fromAdapterToDomain(PhoneRequest request) {
-		log.debug("Mapping request to domain: Number={}, Company={}, OwnerId={}", 
-			request.getNumber(), request.getCompany(), request.getOwnerId());
+		log.debug("=== MAPPING PHONE REQUEST TO DOMAIN ===");
+		log.debug("Request: {}", request);
+		log.debug("Request database field: '{}'", request.getDatabase());
 		
 		if (request == null) {
 			throw new IllegalArgumentException("PhoneRequest no puede ser null");
@@ -105,32 +106,59 @@ public class PhoneMapperRest {
 			throw new IllegalArgumentException("ID del propietario es obligatorio y debe ser un número positivo");
 		}
 		
-		// Buscar el propietario
-		Person owner = findPersonById(ownerId, request.getDatabase());
+		// CORRECCIÓN CRÍTICA: Usar la base de datos especificada en el request
+		String databaseToUse = request.getDatabase();
+		log.debug("Database specified in request for owner lookup: '{}'", databaseToUse);
+		
+		// Normalizar el valor de la base de datos
+		if (databaseToUse != null) {
+			databaseToUse = databaseToUse.trim().toUpperCase();
+		}
+		
+		// Buscar el propietario en la base de datos correcta
+		Person owner = findPersonById(ownerId, databaseToUse);
 		if (owner == null) {
-			throw new IllegalArgumentException("No se encontró persona con ID: " + ownerId);
+			log.error("No se encontró persona con ID: {} en database: {}", ownerId, databaseToUse);
+			throw new IllegalArgumentException("No se encontró persona con ID: " + ownerId + " en " + databaseToUse);
 		}
 		
 		phone.setOwner(owner);
 		
-		log.debug("Mapped phone domain: Number={}, Company={}, Owner={}", 
-			phone.getNumber(), phone.getCompany(), phone.getOwner().getIdentification());
+		log.debug("Mapped phone domain: Number={}, Company={}, Owner={}, Database={}", 
+			phone.getNumber(), phone.getCompany(), phone.getOwner().getIdentification(), databaseToUse);
 		
 		return phone;
 	}
 	
 	private Person findPersonById(Integer personId, String database) {
+		log.debug("=== FINDING PERSON BY ID ===");
+		log.debug("PersonId: {}, Database: '{}'", personId, database);
+		
 		try {
 			PersonInputPort personInputPort;
-			if ("MARIA".equalsIgnoreCase(database)) {
+			
+			// CORRECCIÓN: Asegurar que se use la base de datos correcta
+			if ("MARIA".equalsIgnoreCase(database) || "MARIADB".equalsIgnoreCase(database)) {
+				log.debug("Using MARIA database for person lookup");
 				personInputPort = new PersonUseCase(personOutputPortMaria);
-			} else {
+			} else if ("MONGO".equalsIgnoreCase(database) || "MONGODB".equalsIgnoreCase(database)) {
+				log.debug("Using MONGO database for person lookup");
 				personInputPort = new PersonUseCase(personOutputPortMongo);
+			} else {
+				log.warn("Unknown database '{}', defaulting to MARIA", database);
+				personInputPort = new PersonUseCase(personOutputPortMaria);
 			}
 			
-			return personInputPort.findOne(personId);
+			Person person = personInputPort.findOne(personId);
+			log.debug("Person found: {} {} (ID: {})", 
+				person.getFirstName(), person.getLastName(), person.getIdentification());
+			return person;
+			
 		} catch (NoExistException e) {
-			log.warn("Person not found with ID: {}", personId);
+			log.warn("Person not found with ID: {} in database: {}", personId, database);
+			return null;
+		} catch (Exception e) {
+			log.error("Error finding person with ID: {} in database: {}", personId, database, e);
 			return null;
 		}
 	}

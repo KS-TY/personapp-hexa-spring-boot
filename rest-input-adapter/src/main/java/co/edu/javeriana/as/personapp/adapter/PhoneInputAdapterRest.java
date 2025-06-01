@@ -39,26 +39,29 @@ public class PhoneInputAdapterRest {
 
     private String setPhoneOutputPortInjection(String dbOption) throws InvalidOptionException {
         log.info("=== SETTING PHONE OUTPUT PORT ===");
-        log.info("Received dbOption: '{}'", dbOption);
+        log.info("Original dbOption received: '{}'", dbOption);
         
         if (dbOption == null || dbOption.trim().isEmpty()) {
+            log.error("Database option is null or empty");
             throw new InvalidOptionException("Database option cannot be null or empty");
         }
         
+        // Limpiar y normalizar la opción de base de datos
         String cleanDbOption = dbOption.trim().toUpperCase();
-        log.info("Clean dbOption: '{}'", cleanDbOption);
+        log.info("Cleaned and normalized dbOption: '{}'", cleanDbOption);
         
-        if (cleanDbOption.equals("MARIA")) {
+        // Verificar las opciones válidas
+        if (cleanDbOption.equals("MARIA") || cleanDbOption.equals("MARIADB")) {
             log.info("Setting Phone output port to MARIA");
             phoneInputPort = new PhoneUseCase(phoneOutputPortMaria);
             return DatabaseOption.MARIA.toString();
-        } else if (cleanDbOption.equals("MONGO")) {
+        } else if (cleanDbOption.equals("MONGO") || cleanDbOption.equals("MONGODB")) {
             log.info("Setting Phone output port to MONGO");
             phoneInputPort = new PhoneUseCase(phoneOutputPortMongo);
             return DatabaseOption.MONGO.toString();
         } else {
-            log.error("Invalid database option: '{}'", dbOption);
-            throw new InvalidOptionException("Invalid database option: " + dbOption + ". Must be MARIA or MONGO");
+            log.error("Invalid database option: '{}'. Valid options are: MARIA, MARIADB, MONGO, MONGODB", dbOption);
+            throw new InvalidOptionException("Invalid database option: " + dbOption + ". Must be MARIA, MARIADB, MONGO, or MONGODB");
         }
     }
 
@@ -85,7 +88,7 @@ public class PhoneInputAdapterRest {
     public PhoneResponse crearPhone(PhoneRequest request) {
         log.info("=== CREAR PHONE START ===");
         log.info("PhoneRequest received: {}", request);
-        log.info("Request database: '{}'", request.getDatabase());
+        log.info("Request database field: '{}'", request.getDatabase());
         log.info("Request number: '{}'", request.getNumber());
         log.info("Request company: '{}'", request.getCompany());
         log.info("Request ownerId: '{}'", request.getOwnerId());
@@ -97,23 +100,41 @@ public class PhoneInputAdapterRest {
                 return new PhoneResponse("", "", "", "", "ERROR: Database es requerido");
             }
             
-            String database = setPhoneOutputPortInjection(request.getDatabase());
-            log.info("Database set to: {}", database);
+            // Debug: Verificar el valor exacto del database antes de procesarlo
+            String rawDatabase = request.getDatabase();
+            log.info("Raw database value: '{}' (length: {})", rawDatabase, rawDatabase.length());
             
+            // Configurar el output port según la base de datos seleccionada
+            String database = setPhoneOutputPortInjection(rawDatabase);
+            log.info("Database configuration completed successfully: {}", database);
+            
+            // Mapear el request a dominio
             Phone phone = phoneMapperRest.fromAdapterToDomain(request);
             log.info("Phone mapped from request: Number={}, Company={}, Owner={}", 
                 phone.getNumber(), phone.getCompany(), phone.getOwner().getIdentification());
             
+            // Crear el teléfono
             Phone createdPhone = phoneInputPort.create(phone);
-            log.info("Phone created successfully in {}", database);
+            log.info("Phone created successfully in database: {}", database);
+            log.info("Created phone details: Number={}, Company={}, Owner={}", 
+                createdPhone.getNumber(), createdPhone.getCompany(), 
+                createdPhone.getOwner().getIdentification());
 
+            // Retornar la respuesta según la base de datos utilizada
+            PhoneResponse response;
             if (database.equalsIgnoreCase(DatabaseOption.MARIA.toString())) {
-                return phoneMapperRest.fromDomainToAdapterRestMaria(createdPhone);
+                log.info("Mapping response for MARIA database");
+                response = phoneMapperRest.fromDomainToAdapterRestMaria(createdPhone);
             } else {
-                return phoneMapperRest.fromDomainToAdapterRestMongo(createdPhone);
+                log.info("Mapping response for MONGO database");
+                response = phoneMapperRest.fromDomainToAdapterRestMongo(createdPhone);
             }
+            
+            log.info("Final response created: {}", response);
+            return response;
+            
         } catch (InvalidOptionException e) {
-            log.error("Invalid option error: {}", e.getMessage());
+            log.error("Invalid database option error: {}", e.getMessage());
             return new PhoneResponse("", "", "", "", "ERROR: " + e.getMessage());
         } catch (Exception e) {
             log.error("Unexpected error creating phone: {}", e.getMessage(), e);

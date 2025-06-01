@@ -82,8 +82,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="createDatabase">Guardar en:</label>
-                            <select id="createDatabase">
+                            <label for="personCreateDatabase">Guardar en:</label>
+                            <select id="personCreateDatabase">
                                 <option value="MARIA">MariaDB</option>
                                 <option value="MONGO">MongoDB</option>
                             </select>
@@ -98,6 +98,7 @@
                     <div id="personas-list" class="items-grid"></div>
                 </div>
             </div>
+
 
             <!-- Sección de Profesiones -->
             <div id="professions-section" class="section">
@@ -136,20 +137,20 @@
                     <h3>➕ Crear Nueva Profesión</h3>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="id">ID:</label>
-                            <input type="number" id="id" placeholder="Ej: 1">
+                            <label for="professionId">ID:</label>
+                            <input type="number" id="professionId" placeholder="Ej: 1">
                         </div>
                         <div class="form-group">
-                            <label for="name">Nombre:</label>
-                            <input type="text" id="name" placeholder="Ej: Ingeniero de Software">
+                            <label for="professionName">Nombre:</label>
+                            <input type="text" id="professionName" placeholder="Ej: Ingeniero de Software">
                         </div>
                         <div class="form-group">
-                            <label for="description">Descripción:</label>
-                            <input type="text" id="description" placeholder="Ej: Desarrollo de aplicaciones">
+                            <label for="professionDescription">Descripción:</label>
+                            <input type="text" id="professionDescription" placeholder="Ej: Desarrollo de aplicaciones">
                         </div>
                         <div class="form-group">
-                            <label for="createDatabase">Guardar en:</label>
-                            <select id="createDatabase">
+                            <label for="professionCreateDatabase">Guardar en:</label>
+                            <select id="professionCreateDatabase">
                                 <option value="MARIA">MariaDB</option>
                                 <option value="MONGO">MongoDB</option>
                             </select>
@@ -204,36 +205,42 @@
                 <button onclick="loadItems()">🔄 Cargar Teléfonos</button>
                 <button onclick="loadBothDatabases()">📊 Cargar Ambas BD</button>
                 <button onclick="loadAvailableOwners()">👥 Actualizar Propietarios</button>
+                <button onclick="debugPhoneForm()">🔍 Debug Form</button>
                 <button onclick="window.open('/swagger-ui.html', '_blank')">📖 Ver API Docs</button>
             </div>
 
-            <!-- Formulario para crear teléfono -->
+            <!-- Formulario para crear teléfono - CORREGIDO CON IDs ÚNICOS -->
             <div class="form-section">
                 <h3>➕ Crear Nuevo Teléfono</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="number">Número:</label>
-                        <input type="text" id="number" placeholder="Ej: 3001234567">
+                        <label for="phoneNumber">Número:</label>
+                        <input type="text" id="phoneNumber" placeholder="Ej: 3001234567" required>
                     </div>
                     <div class="form-group">
-                        <label for="company">Compañía:</label>
-                        <input type="text" id="company" placeholder="Ej: Claro">
+                        <label for="phoneCompany">Compañía:</label>
+                        <input type="text" id="phoneCompany" placeholder="Ej: Claro" required>
                     </div>
                     <div class="form-group">
-                        <label for="ownerId">Propietario:</label>
-                        <select id="ownerId">
+                        <label for="phoneOwnerId">Propietario:</label>
+                        <select id="phoneOwnerId" required>
                             <option value="">Seleccione un propietario...</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="createDatabase">Guardar en:</label>
-                        <select id="createDatabase">
+                        <label for="phoneCreateDatabase">Guardar en:</label>
+                        <select id="phoneCreateDatabase" required>
+                            <option value="">Seleccione base de datos...</option>
                             <option value="MARIA">MariaDB</option>
                             <option value="MONGO">MongoDB</option>
                         </select>
                     </div>
                 </div>
-                <button onclick="createItem()">➕ Crear Teléfono</button>
+                <div style="margin-top: 15px;">
+                    <button onclick="createPhoneWithValidation()">➕ Crear Teléfono</button>
+                    <button onclick="debugPhoneForm()" style="background: #6c757d; margin-left: 10px;">🔍 Verificar Formulario</button>
+                    <button onclick="forceSelectDatabase('MONGO')" style="background: #28a745; margin-left: 10px;">🔧 Forzar MONGO</button>
+                </div>
             </div>
 
             <!-- Lista de teléfonos -->
