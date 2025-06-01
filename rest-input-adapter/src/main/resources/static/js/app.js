@@ -380,23 +380,143 @@ function getGenderText(sex) {
 }
 
 // Estadísticas
+// Actualizar la función updateStats para incluir phones
 function updateStats(items, database) {
     const total = items.length;
-    document.getElementById(`total${currentSection.charAt(0).toUpperCase() + currentSection.slice(1)}`).textContent = total;
     
-    if (database === 'MARIA') {
-        document.getElementById(`${currentSection}MariaCount`).textContent = total;
-        document.getElementById(`${currentSection}MongoCount`).textContent = '0';
-    } else if (database === 'MONGO') {
-        document.getElementById(`${currentSection}MongoCount`).textContent = total;
-        document.getElementById(`${currentSection}MariaCount`).textContent = '0';
+    if (currentSection === 'personas') {
+        document.getElementById('totalPersonas').textContent = total;
+        if (database === 'MARIA') {
+            document.getElementById('personasMariaCount').textContent = total;
+            document.getElementById('personasMongoCount').textContent = '0';
+        } else if (database === 'MONGO') {
+            document.getElementById('personasMongoCount').textContent = total;
+            document.getElementById('personasMariaCount').textContent = '0';
+        }
+    } else if (currentSection === 'professions') {
+        document.getElementById('totalProfessions').textContent = total;
+        if (database === 'MARIA') {
+            document.getElementById('professionsMariaCount').textContent = total;
+            document.getElementById('professionsMongoCount').textContent = '0';
+        } else if (database === 'MONGO') {
+            document.getElementById('professionsMongoCount').textContent = total;
+            document.getElementById('professionsMariaCount').textContent = '0';
+        }
+    } else if (currentSection === 'phones') {
+        document.getElementById('totalPhones').textContent = total;
+        if (database === 'MARIA') {
+            document.getElementById('phonesMariaCount').textContent = total;
+            document.getElementById('phonesMongoCount').textContent = '0';
+        } else if (database === 'MONGO') {
+            document.getElementById('phonesMongoCount').textContent = total;
+            document.getElementById('phonesMariaCount').textContent = '0';
+        }
     }
 }
 
 function updateStatsFromBoth(mariaItems, mongoItems) {
-    document.getElementById(`${currentSection}MariaCount`).textContent = mariaItems.length;
-    document.getElementById(`${currentSection}MongoCount`).textContent = mongoItems.length;
-    document.getElementById(`total${currentSection.charAt(0).toUpperCase() + currentSection.slice(1)}`).textContent = mariaItems.length + mongoItems.length;
+    if (currentSection === 'personas') {
+        document.getElementById('personasMariaCount').textContent = mariaItems.length;
+        document.getElementById('personasMongoCount').textContent = mongoItems.length;
+        document.getElementById('totalPersonas').textContent = mariaItems.length + mongoItems.length;
+    } else if (currentSection === 'professions') {
+        document.getElementById('professionsMariaCount').textContent = mariaItems.length;
+        document.getElementById('professionsMongoCount').textContent = mongoItems.length;
+        document.getElementById('totalProfessions').textContent = mariaItems.length + mongoItems.length;
+    } else if (currentSection === 'phones') {
+        document.getElementById('phonesMariaCount').textContent = mariaItems.length;
+        document.getElementById('phonesMongoCount').textContent = mongoItems.length;
+        document.getElementById('totalPhones').textContent = mariaItems.length + mongoItems.length;
+    }
+}
+
+// Función para cargar personas disponibles en el dropdown
+async function loadAvailableOwners() {
+    if (currentSection !== 'phones') return;
+    
+    try {
+        // Cargar personas de ambas bases de datos
+        const [mariaResponse, mongoResponse] = await Promise.all([
+            fetch(`${PERSONAS_API}/MARIA`),
+            fetch(`${PERSONAS_API}/MONGO`)
+        ]);
+
+        const mariaPersonas = mariaResponse.ok ? await mariaResponse.json() : [];
+        const mongoPersonas = mongoResponse.ok ? await mongoResponse.json() : [];
+        
+        // Combinar y eliminar duplicados por ID
+        const allPersonas = [...mariaPersonas, ...mongoPersonas];
+        const uniquePersonas = allPersonas.filter((persona, index, self) => 
+            index === self.findIndex(p => getItemId(p) === getItemId(persona))
+        );
+        
+        // Actualizar el dropdown
+        updateOwnerDropdown(uniquePersonas);
+        
+    } catch (error) {
+        console.error('Error loading available owners:', error);
+        showMessage('❌ Error al cargar propietarios disponibles', 'error');
+    }
+}
+
+function updateOwnerDropdown(personas) {
+    const ownerSelect = document.getElementById('ownerId');
+    if (!ownerSelect) return;
+    
+    // Limpiar opciones existentes
+    ownerSelect.innerHTML = '<option value="">Seleccione un propietario...</option>';
+    
+    // Agregar personas disponibles
+    personas.forEach(persona => {
+        const personId = getItemId(persona);
+        const personName = `${persona.firstName || persona.nombre || ''} ${persona.lastName || persona.apellido || ''}`.trim();
+        
+        if (personId && personName) {
+            const option = document.createElement('option');
+            option.value = personId;
+            option.textContent = `${personId} - ${personName}`;
+            ownerSelect.appendChild(option);
+        }
+    });
+}
+
+// Modificar la función showSection para cargar propietarios cuando se selecciona phones
+function showSection(section) {
+    console.log('Switching to section:', section);
+    currentSection = section;
+    
+    // Actualizar navegación
+    document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-section="${section}"]`).classList.add('active');
+    
+    // Actualizar secciones
+    document.querySelectorAll('.section').forEach(sec => {
+        sec.classList.remove('active');
+    });
+    document.getElementById(`${section}-section`).classList.add('active');
+    
+    // Cargar datos de la sección
+    loadBothDatabases();
+    
+    // Si es la sección de teléfonos, cargar propietarios disponibles
+    if (section === 'phones') {
+        setTimeout(() => loadAvailableOwners(), 500); // Delay para que carguen las personas primero
+    }
+}
+
+// Actualizar función de inicialización para incluir phones
+function initializeApp() {
+    setupNavigation();
+    showSection('personas');
+    loadBothDatabases();
+    setupEventListeners();
+    
+    // Configurar event listener para cuando se cambie a la sección de teléfonos
+    document.querySelector('[data-section="phones"]').addEventListener('click', function() {
+        setTimeout(() => loadAvailableOwners(), 1000);
+    });
 }
 
 // Crear elemento
@@ -521,10 +641,59 @@ function openPhoneEditModal(number, company, ownerId, database) {
     // Llenar los campos
     document.getElementById('editNumber').value = number;
     document.getElementById('editCompany').value = company || '';
-    document.getElementById('editOwnerId').value = ownerId || '';
+    
+    // Cargar opciones de propietarios en el dropdown de edición
+    loadAvailableOwnersForEdit(ownerId);
     
     // Mostrar el modal
     document.getElementById('editModal').style.display = 'block';
+}
+
+async function loadAvailableOwnersForEdit(selectedOwnerId) {
+    try {
+        // Cargar personas de ambas bases de datos
+        const [mariaResponse, mongoResponse] = await Promise.all([
+            fetch(`${PERSONAS_API}/MARIA`),
+            fetch(`${PERSONAS_API}/MONGO`)
+        ]);
+
+        const mariaPersonas = mariaResponse.ok ? await mariaResponse.json() : [];
+        const mongoPersonas = mongoResponse.ok ? await mongoResponse.json() : [];
+        
+        // Combinar y eliminar duplicados por ID
+        const allPersonas = [...mariaPersonas, ...mongoPersonas];
+        const uniquePersonas = allPersonas.filter((persona, index, self) => 
+            index === self.findIndex(p => getItemId(p) === getItemId(persona))
+        );
+        
+        // Actualizar el dropdown de edición
+        const editOwnerSelect = document.getElementById('editOwnerId');
+        if (editOwnerSelect) {
+            editOwnerSelect.innerHTML = '<option value="">Seleccione un propietario...</option>';
+            
+            uniquePersonas.forEach(persona => {
+                const personId = getItemId(persona);
+                const personName = `${persona.firstName || persona.nombre || ''} ${persona.lastName || persona.apellido || ''}`.trim();
+                
+                if (personId && personName) {
+                    const option = document.createElement('option');
+                    option.value = personId;
+                    option.textContent = `${personId} - ${personName}`;
+                    
+                    // Seleccionar el propietario actual
+                    if (personId === selectedOwnerId) {
+                        option.selected = true;
+                    }
+                    
+                    editOwnerSelect.appendChild(option);
+                }
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error loading available owners for edit:', error);
+        showMessage('❌ Error al cargar propietarios para edición', 'error');
+    }
 }
 
 function closeEditModal() {
@@ -557,7 +726,7 @@ async function updateItem() {
         formData.lastName = document.getElementById('editLastName').value;
         formData.age = document.getElementById('editAge').value;
         formData.sex = document.getElementById('editSex').value;
-        formData.database = currentEditDatabase; // Usar BD original
+        formData.database = currentEditDatabase;
         
         if (!formData.firstName || !formData.lastName) {
             showMessage('❌ Por favor complete los campos obligatorios (Nombre, Apellido)', 'error');
@@ -567,7 +736,7 @@ async function updateItem() {
         formData.id = currentEditId;
         formData.name = document.getElementById('editName').value;
         formData.description = document.getElementById('editDescription').value;
-        formData.database = currentEditDatabase; // Usar BD original
+        formData.database = currentEditDatabase;
         
         if (!formData.name) {
             showMessage('❌ Por favor complete el campo obligatorio (Nombre)', 'error');
@@ -580,11 +749,10 @@ async function updateItem() {
         formData.database = currentEditDatabase;
         
         if (!formData.company || !formData.ownerId) {
-            showMessage('❌ Por favor complete los campos obligatorios (Compañía, ID Propietario)', 'error');
+            showMessage('❌ Por favor complete los campos obligatorios (Compañía, Propietario)', 'error');
             return;
         }
     }
-
 
     try {
         setLoading(true);

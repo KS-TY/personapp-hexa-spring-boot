@@ -175,70 +175,73 @@
         </div>
 
         <!-- Sección de Teléfonos -->
-            <div id="phones-section" class="section">
-                <!-- Estadísticas de Teléfonos -->
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalPhones">0</div>
-                        <div class="stat-label">Total Teléfonos</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="phonesMariaCount">0</div>
-                        <div class="stat-label">En MariaDB</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="phonesMongoCount">0</div>
-                        <div class="stat-label">En MongoDB</div>
-                    </div>
+        <div id="phones-section" class="section">
+            <!-- Estadísticas de Teléfonos -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalPhones">0</div>
+                    <div class="stat-label">Total Teléfonos</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="phonesMariaCount">0</div>
+                    <div class="stat-label">En MariaDB</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="phonesMongoCount">0</div>
+                    <div class="stat-label">En MongoDB</div>
+                </div>
+            </div>
 
-                <!-- Controles de Teléfonos -->
-                <div class="controls">
-                    <div class="db-selector">
-                        <label for="phoneDatabase">Base de Datos:</label>
-                        <select id="phoneDatabase">
+            <!-- Controles de Teléfonos -->
+            <div class="controls">
+                <div class="db-selector">
+                    <label for="phoneDatabase">Base de Datos:</label>
+                    <select id="phoneDatabase">
+                        <option value="MARIA">MariaDB</option>
+                        <option value="MONGO">MongoDB</option>
+                    </select>
+                </div>
+                <button onclick="loadItems()">🔄 Cargar Teléfonos</button>
+                <button onclick="loadBothDatabases()">📊 Cargar Ambas BD</button>
+                <button onclick="loadAvailableOwners()">👥 Actualizar Propietarios</button>
+                <button onclick="window.open('/swagger-ui.html', '_blank')">📖 Ver API Docs</button>
+            </div>
+
+            <!-- Formulario para crear teléfono -->
+            <div class="form-section">
+                <h3>➕ Crear Nuevo Teléfono</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="number">Número:</label>
+                        <input type="text" id="number" placeholder="Ej: 3001234567">
+                    </div>
+                    <div class="form-group">
+                        <label for="company">Compañía:</label>
+                        <input type="text" id="company" placeholder="Ej: Claro">
+                    </div>
+                    <div class="form-group">
+                        <label for="ownerId">Propietario:</label>
+                        <select id="ownerId">
+                            <option value="">Seleccione un propietario...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="createDatabase">Guardar en:</label>
+                        <select id="createDatabase">
                             <option value="MARIA">MariaDB</option>
                             <option value="MONGO">MongoDB</option>
                         </select>
                     </div>
-                    <button onclick="loadItems()">🔄 Cargar Teléfonos</button>
-                    <button onclick="loadBothDatabases()">📊 Cargar Ambas BD</button>
-                    <button onclick="window.open('/swagger-ui.html', '_blank')">📖 Ver API Docs</button>
                 </div>
-
-                <!-- Formulario para crear teléfono -->
-                <div class="form-section">
-                    <h3>➕ Crear Nuevo Teléfono</h3>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="number">Número:</label>
-                            <input type="text" id="number" placeholder="Ej: 3001234567">
-                        </div>
-                        <div class="form-group">
-                            <label for="company">Compañía:</label>
-                            <input type="text" id="company" placeholder="Ej: Claro">
-                        </div>
-                        <div class="form-group">
-                            <label for="ownerId">ID Propietario:</label>
-                            <input type="number" id="ownerId" placeholder="Ej: 123456789">
-                        </div>
-                        <div class="form-group">
-                            <label for="createDatabase">Guardar en:</label>
-                            <select id="createDatabase">
-                                <option value="MARIA">MariaDB</option>
-                                <option value="MONGO">MongoDB</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button onclick="createItem()">➕ Crear Teléfono</button>
-                </div>
-
-                <!-- Lista de teléfonos -->
-                <div id="phones-container">
-                    <h3>📱 Lista de Teléfonos</h3>
-                    <div id="phones-list" class="items-grid"></div>
-                </div>
+                <button onclick="createItem()">➕ Crear Teléfono</button>
             </div>
+
+            <!-- Lista de teléfonos -->
+            <div id="phones-container">
+                <h3>📱 Lista de Teléfonos</h3>
+                <div id="phones-list" class="items-grid"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal para editar -->
@@ -309,8 +312,10 @@
                         <input type="text" id="editCompany" placeholder="Ej: Claro">
                     </div>
                     <div class="form-group">
-                        <label for="editOwnerId">ID Propietario:</label>
-                        <input type="number" id="editOwnerId" placeholder="Ej: 123456789">
+                        <label for="editOwnerId">Propietario:</label>
+                        <select id="editOwnerId">
+                            <option value="">Seleccione un propietario...</option>
+                        </select>
                     </div>
                 </div>
             </div>
