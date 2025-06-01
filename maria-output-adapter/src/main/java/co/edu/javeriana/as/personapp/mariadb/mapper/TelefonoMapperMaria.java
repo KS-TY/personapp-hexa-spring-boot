@@ -1,8 +1,7 @@
 package co.edu.javeriana.as.personapp.mariadb.mapper;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import co.edu.javeriana.as.personapp.common.annotations.Mapper;
+import co.edu.javeriana.as.personapp.domain.Gender;
 import co.edu.javeriana.as.personapp.domain.Person;
 import co.edu.javeriana.as.personapp.domain.Phone;
 import co.edu.javeriana.as.personapp.mariadb.entity.PersonaEntity;
@@ -11,9 +10,6 @@ import lombok.NonNull;
 
 @Mapper
 public class TelefonoMapperMaria {
-
-	@Autowired
-	private PersonaMapperMaria personaMapperMaria;
 
 	public TelefonoEntity fromDomainToAdapter(Phone phone) {
 		TelefonoEntity telefonoEntity = new TelefonoEntity();
@@ -24,7 +20,16 @@ public class TelefonoMapperMaria {
 	}
 
 	private PersonaEntity validateDuenio(@NonNull Person owner) {
-		return owner != null ? personaMapperMaria.fromDomainToAdapter(owner) : new PersonaEntity();
+		if (owner == null) return new PersonaEntity();
+		
+		PersonaEntity personaEntity = new PersonaEntity();
+		personaEntity.setCc(owner.getIdentification());
+		personaEntity.setNombre(owner.getFirstName());
+		personaEntity.setApellido(owner.getLastName());
+		personaEntity.setGenero(owner.getGender() == Gender.FEMALE ? 'F' : 
+		                        owner.getGender() == Gender.MALE ? 'M' : ' ');
+		personaEntity.setEdad(owner.getAge());
+		return personaEntity;
 	}
 
 	public Phone fromAdapterToDomain(TelefonoEntity telefonoEntity) {
@@ -36,6 +41,15 @@ public class TelefonoMapperMaria {
 	}
 
 	private @NonNull Person validateOwner(PersonaEntity duenio) {
-		return duenio != null ? personaMapperMaria.fromAdapterToDomain(duenio) : new Person();
+		if (duenio == null) return new Person();
+		
+		Person person = new Person();
+		person.setIdentification(duenio.getCc());
+		person.setFirstName(duenio.getNombre());
+		person.setLastName(duenio.getApellido());
+		person.setGender(duenio.getGenero() == 'F' ? Gender.FEMALE : 
+		                 duenio.getGenero() == 'M' ? Gender.MALE : Gender.OTHER);
+		person.setAge(duenio.getEdad());
+		return person;
 	}
 }

@@ -143,6 +143,8 @@ async function loadItems() {
         database = document.getElementById('database').value;
     } else if (currentSection === 'professions') {
         database = document.getElementById('professionDatabase').value;
+    } else if (currentSection === 'phones') {
+        database = document.getElementById('phoneDatabase').value;
     }
     
     const api = APIS[currentSection];
@@ -166,6 +168,41 @@ async function loadItems() {
     } finally {
         setLoading(false);
     }
+}
+
+function displayPhones(phones, container) {
+    container.innerHTML = phones.map(phone => {
+        const phoneNumber = getItemId(phone) || phone.number || phone.num || 'Sin número';
+        if (!phoneNumber || phoneNumber === 'undefined' || phoneNumber === 'null') {
+            console.error('Invalid phone number:', phone);
+            return '';
+        }
+        
+        const phoneCompany = (phone.company || phone.oper || 'Sin compañía').replace(/'/g, "&apos;");
+        const phoneOwnerId = phone.ownerId || phone.duenio || 'Sin propietario';
+        const phoneDatabase = phone.database || 'MariaDB';
+        
+        return `
+            <div class="item-card">
+                <div class="item-id">📱 ${phoneNumber}</div>
+                <div class="item-name">${phoneCompany}</div>
+                <div class="item-details">
+                    <strong>Propietario ID:</strong> ${phoneOwnerId}
+                </div>
+                <span class="database-badge ${phoneDatabase === 'MariaDB' ? 'maria-badge' : 'mongo-badge'}">
+                    ${phoneDatabase}
+                </span>
+                <div class="item-actions">
+                    <button class="btn-small btn-edit" onclick="openPhoneEditModal('${phoneNumber}', '${phoneCompany}', '${phoneOwnerId}', '${phoneDatabase}')">
+                        ✏️ Editar
+                    </button>
+                    <button class="btn-small btn-delete" onclick="handleDeleteClick('${phoneNumber}', '${phoneDatabase}')">
+                        🗑️ Eliminar
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 async function loadBothDatabases() {
