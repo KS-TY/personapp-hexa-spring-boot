@@ -23,12 +23,22 @@ public class EstudiosMapperMaria {
 	private ProfesionMapperMaria profesionMapperMaria;
 
 	public EstudiosEntity fromDomainToAdapter(Study study) {
-		log.debug("=== MARIA MAPPER FROM DOMAIN TO ADAPTER ===");
-		log.debug("Study input: PersonId={}, ProfessionId={}, Date={}, University={}", 
-			study.getPerson().getIdentification(),
-			study.getProfession().getIdentification(),
-			study.getGraduationDate(),
-			study.getUniversityName());
+		log.debug("Mapping Study domain to EstudiosEntity");
+		
+		if (study == null) {
+			log.error("Study is null");
+			return null;
+		}
+		
+		if (study.getPerson() == null || study.getPerson().getIdentification() == null) {
+			log.error("Study person or person identification is null");
+			throw new IllegalArgumentException("Study must have a valid person with identification");
+		}
+		
+		if (study.getProfession() == null || study.getProfession().getIdentification() == null) {
+			log.error("Study profession or profession identification is null");
+			throw new IllegalArgumentException("Study must have a valid profession with identification");
+		}
 		
 		EstudiosEntityPK estudioPK = new EstudiosEntityPK();
 		estudioPK.setCcPer(study.getPerson().getIdentification());
@@ -39,85 +49,88 @@ public class EstudiosMapperMaria {
 		estudio.setFecha(validateFecha(study.getGraduationDate()));
 		estudio.setUniver(validateUniver(study.getUniversityName()));
 		
-		// Importante: Establecer las relaciones para que JPA funcione correctamente
-		estudio.setPersona(personaMapperMaria.fromDomainToAdapter(study.getPerson()));
-		estudio.setProfesion(profesionMapperMaria.fromDomainToAdapter(study.getProfession()));
-		
-		log.debug("EstudiosEntity created: PK={}, Fecha={}, Univer={}", 
-			estudio.getEstudiosPK(), estudio.getFecha(), estudio.getUniver());
+		log.debug("Mapped EstudiosEntity: PersonId={}, ProfessionId={}", 
+			estudioPK.getCcPer(), estudioPK.getIdProf());
 		
 		return estudio;
 	}
 
 	private Date validateFecha(LocalDate graduationDate) {
 		if (graduationDate != null) {
-			Date result = Date.from(graduationDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
-			log.debug("Converted LocalDate {} to Date {}", graduationDate, result);
-			return result;
+			try {
+				return Date.from(graduationDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
+			} catch (Exception e) {
+				log.warn("Error converting LocalDate to Date: {}", e.getMessage());
+				return null;
+			}
 		}
-		log.debug("GraduationDate is null, returning null");
 		return null;
 	}
 
 	private String validateUniver(String universityName) {
-		String result = universityName != null ? universityName : "";
-		log.debug("University name validated: '{}'", result);
-		return result;
+		return universityName != null ? universityName : "";
 	}
 
 	public Study fromAdapterToDomain(EstudiosEntity estudiosEntity) {
-		log.debug("=== MARIA MAPPER FROM ADAPTER TO DOMAIN ===");
-		log.debug("EstudiosEntity input: PK={}, Fecha={}, Univer={}", 
-			estudiosEntity.getEstudiosPK(), estudiosEntity.getFecha(), estudiosEntity.getUniver());
+		log.debug("Mapping EstudiosEntity to Study domain");
 		
 		if (estudiosEntity == null) {
 			log.error("EstudiosEntity is null");
 			return null;
 		}
 		
-		if (estudiosEntity.getEstudiosPK() == null) {
-			log.error("EstudiosEntity PK is null");
-			return null;
+		try {
+			Study study = new Study();
+			
+			// Mapear persona y profesión
+			if (estudiosEntity.getPersona() != null) {
+				study.setPerson(personaMapperMaria.fromAdapterToDomain(estudiosEntity.getPersona()));
+			} else {
+				log.error("EstudiosEntity persona is null");
+				throw new IllegalStateException("EstudiosEntity must have a persona");
+			}
+			
+			if (estudiosEntity.getProfesion() != null) {
+				study.setProfession(profesionMapperMaria.fromAdapterToDomain(estudiosEntity.getProfesion()));
+			} else {
+				log.error("EstudiosEntity profesion is null");
+				throw new IllegalStateException("EstudiosEntity must have a profesion");
+			}
+			
+			study.setGraduationDate(validateGraduationDate(estudiosEntity.getFecha()));
+			study.setUniversityName(validateUniversityName(estudiosEntity.getUniver()));
+			
+			log.debug("Mapped Study domain: PersonId={}, ProfessionId={}", 
+				study.getPerson().getIdentification(), study.getProfession().getIdentification());
+			
+			return study;
+			
+		} catch (Exception e) {
+			log.error("Error mapping EstudiosEntity to Study domain: {}", e.getMessage(), e);
+			throw new RuntimeException("Failed to map EstudiosEntity to Study domain", e);
 		}
-		
-		if (estudiosEntity.getPersona() == null) {
-			log.error("EstudiosEntity.persona is null");
-			return null;
-		}
-		
-		if (estudiosEntity.getProfesion() == null) {
-			log.error("EstudiosEntity.profesion is null");
-			return null;
-		}
-		
-		Study study = new Study();
-		study.setPerson(personaMapperMaria.fromAdapterToDomain(estudiosEntity.getPersona()));
-		study.setProfession(profesionMapperMaria.fromAdapterToDomain(estudiosEntity.getProfesion()));
-		study.setGraduationDate(validateGraduationDate(estudiosEntity.getFecha()));
-		study.setUniversityName(validateUniversityName(estudiosEntity.getUniver()));
-		
-		log.debug("Study domain created: PersonId={}, ProfessionId={}, Date={}, University={}", 
-			study.getPerson().getIdentification(),
-			study.getProfession().getIdentification(),
-			study.getGraduationDate(),
-			study.getUniversityName());
-		
-		return study;
 	}
 
 	private LocalDate validateGraduationDate(Date fecha) {
 		if (fecha != null) {
-			LocalDate result = fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-			log.debug("Converted Date {} to LocalDate {}", fecha, result);
-			return result;
+			try {
+				// CORRECCIÓN: Usar toLocalDate() directamente en lugar de toInstant()
+				// Para java.sql.Date, usar toLocalDate() que está disponible desde Java 8
+				if (fecha instanceof java.sql.Date) {
+					return ((java.sql.Date) fecha).toLocalDate();
+				} else {
+					// Para java.util.Date, convertir usando Instant
+					return fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+				}
+			} catch (Exception e) {
+				log.warn("Error converting Date to LocalDate: {} - Error: {}", fecha, e.getMessage());
+				return null;
+			}
 		}
-		log.debug("Date is null, returning null LocalDate");
 		return null;
 	}
 
 	private String validateUniversityName(String univer) {
-		String result = univer != null ? univer : "";
-		log.debug("University name from DB: '{}'", result);
-		return result;
+		return univer != null ? univer : "";
 	}
 }

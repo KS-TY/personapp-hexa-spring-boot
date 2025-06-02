@@ -297,33 +297,36 @@ function displayProfessions(professions, container) {
 // Función específica para manejar eliminación de estudios
 function handleStudyDeleteClick(personId, professionId, database) {
     console.log('=== HANDLE STUDY DELETE CLICK ===');
-    console.log('Received PersonId:', personId, 'Type:', typeof personId);
-    console.log('Received ProfessionId:', professionId, 'Type:', typeof professionId);
-    console.log('Received Database:', database, 'Type:', typeof database);
+    console.log('Received PersonId:', personId, 'ProfessionId:', professionId, 'Database:', database);
     
-    if (!personId || personId === 'null' || personId === 'undefined' || String(personId).trim() === '' || String(personId).trim() === 'null') {
+    if (!personId || personId === 'null' || personId === 'undefined' || personId === 'N/A') {
         console.error('Invalid PersonId for delete:', personId);
         showMessage('❌ Error: ID de persona no válido para eliminar', 'error');
         return;
     }
     
-    if (!professionId || professionId === 'null' || professionId === 'undefined' || String(professionId).trim() === '' || String(professionId).trim() === 'null') {
+    if (!professionId || professionId === 'null' || professionId === 'undefined' || professionId === 'N/A') {
         console.error('Invalid ProfessionId for delete:', professionId);
         showMessage('❌ Error: ID de profesión no válido para eliminar', 'error');
         return;
     }
     
-    if (!database || database === 'null' || database === 'undefined' || String(database).trim() === '' || String(database).trim() === 'null') {
+    if (!database || database === 'null' || database === 'undefined') {
         console.error('Invalid database for delete:', database);
         showMessage('❌ Error: Base de datos no válida para eliminar', 'error');
         return;
     }
     
-    const cleanPersonId = String(personId).trim();
-    const cleanProfessionId = String(professionId).trim();
+    // Establecer las variables globales para eliminación
+    currentDeleteId = `${personId}-${professionId}`;
+    currentDeleteDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO';
     
-    console.log('Proceeding with study delete - PersonId:', cleanPersonId, 'ProfessionId:', cleanProfessionId, 'Database:', database);
-    deleteStudy(cleanPersonId, cleanProfessionId, database);
+    console.log('Set currentDeleteId:', currentDeleteId);
+    console.log('Set currentDeleteDatabase:', currentDeleteDatabase);
+    
+    const message = `¿Está seguro de que desea eliminar el estudio de la persona ${personId} en la profesión ${professionId} de ${database}?`;
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmModal').style.display = 'block';
 }
 
 
@@ -364,70 +367,21 @@ function displayPhones(phones, container) {
 }
 
 function displayStudies(studies, container) {
-    console.log('=== DISPLAY STUDIES DEBUG ===');
-    console.log('Studies array received:', studies);
-    console.log('Number of studies:', studies.length);
-    
-    if (!studies || studies.length === 0) {
-        container.innerHTML = `<p style="text-align: center; color: #666; padding: 40px;">No hay estudios registrados</p>`;
-        return;
-    }
-    
-    // Log de ejemplo para debug
-    if (studies.length > 0) {
-        console.log('Sample study object:', studies[0]);
-        console.log('Sample study keys:', Object.keys(studies[0]));
-    }
-    
     container.innerHTML = studies.map(study => {
-        console.log('Processing study:', study);
-        
-        // Extraer IDs de manera más robusta
-        let personId = study.personId || study.cc_per || study.ccPer || 'N/A';
-        let professionId = study.professionId || study.id_prof || study.idProf || 'N/A';
-        
-        // Manejar el caso donde los IDs podrían estar en objetos anidados
-        if (study.person && study.person.identification) {
-            personId = study.person.identification;
-        }
-        if (study.profession && study.profession.identification) {
-            professionId = study.profession.identification;
-        }
-        
-        console.log('Extracted PersonId:', personId, 'ProfessionId:', professionId);
+        // Obtener IDs de manera más robusta
+        const personId = study.personId || study.cc_per || study._id?.split('-')[0] || 'N/A';
+        const professionId = study.professionId || study.id_prof || study._id?.split('-')[1] || 'N/A';
         
         const studyId = `${personId}-${professionId}`;
-        
-        // Extraer otros campos de manera robusta
-        let graduationDate = study.graduationDate || study.fecha || 'No especificada';
-        let universityName = study.universityName || study.univer || 'No especificada';
-        
-        // Limpiar valores nulos o undefined
-        if (graduationDate === null || graduationDate === 'null' || graduationDate === undefined) {
-            graduationDate = 'No especificada';
-        }
-        if (universityName === null || universityName === 'null' || universityName === undefined) {
-            universityName = 'No especificada';
-        }
-        
+        const graduationDate = (study.graduationDate || study.fecha || 'No especificada').replace(/'/g, "&apos;");
+        const universityName = (study.universityName || study.univer || 'No especificada').replace(/'/g, "&apos;");
         const studyDatabase = study.database || 'MariaDB';
         
-        // Escapar comillas para HTML
-        const escapedGraduationDate = String(graduationDate).replace(/'/g, "&apos;");
-        const escapedUniversityName = String(universityName).replace(/'/g, "&apos;");
-        
-        console.log('Final values - PersonId:', personId, 'ProfessionId:', professionId, 
-                   'Date:', graduationDate, 'University:', universityName, 'DB:', studyDatabase);
-        
-        // Validar que tenemos IDs válidos antes de crear la tarjeta
-        if (!personId || personId === 'N/A' || !professionId || professionId === 'N/A') {
-            console.error('Invalid study data, skipping:', study);
-            return '';
-        }
+        console.log('Study item:', {personId, professionId, graduationDate, universityName, studyDatabase});
         
         return `
             <div class="item-card">
-                <div class="item-id">🎓 ${studyId}</div>
+                <div class="item-id">👨‍🎓 ${studyId}</div>
                 <div class="item-name">Persona ID: ${personId} → Profesión ID: ${professionId}</div>
                 <div class="item-details">
                     <strong>Fecha de graduación:</strong> ${graduationDate}<br>
@@ -437,7 +391,7 @@ function displayStudies(studies, container) {
                     ${studyDatabase}
                 </span>
                 <div class="item-actions">
-                    <button class="btn-small btn-edit" onclick="openStudyEditModal('${personId}', '${professionId}', '${escapedGraduationDate}', '${escapedUniversityName}', '${studyDatabase}')">
+                    <button class="btn-small btn-edit" onclick="openStudyEditModal('${personId}', '${professionId}', '${graduationDate}', '${universityName}', '${studyDatabase}')">
                         ✏️ Editar
                     </button>
                     <button class="btn-small btn-delete" onclick="handleStudyDeleteClick('${personId}', '${professionId}', '${studyDatabase}')">
@@ -446,9 +400,7 @@ function displayStudies(studies, container) {
                 </div>
             </div>
         `;
-    }).filter(html => html !== '').join('');
-    
-    console.log('=== DISPLAY STUDIES COMPLETED ===');
+    }).join('');
 }
 
 function getGenderText(sex) {
@@ -763,13 +715,14 @@ function openPhoneEditModal(number, company, ownerId, database) {
     // Mostrar el modal
     document.getElementById('editModal').style.display = 'block';
 }
-
 function openStudyEditModal(personId, professionId, graduationDate, universityName, database) {
     console.log('Opening study edit modal with:', { personId, professionId, graduationDate, universityName, database });
     
-    // Crear ID compuesto para estudios
     currentEditId = `${personId}-${professionId}`;
     currentEditDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO';
+    
+    console.log('Set currentEditId:', currentEditId);
+    console.log('Set currentEditDatabase:', currentEditDatabase);
     
     // Configurar el modal para estudios
     document.getElementById('editModalTitle').textContent = '✏️ Editar Estudio';
@@ -778,15 +731,35 @@ function openStudyEditModal(personId, professionId, graduationDate, universityNa
     document.getElementById('editPhoneForm').style.display = 'none';
     document.getElementById('editStudyForm').style.display = 'block';
     
-    // Llenar los campos (personId y professionId son readonly)
+    // Llenar los campos
     document.getElementById('editStudyPersonId').value = personId;
     document.getElementById('editStudyProfessionId').value = professionId;
-    document.getElementById('editStudyGraduationDate').value = graduationDate && graduationDate !== 'null' && graduationDate !== 'undefined' && graduationDate !== 'No especificada' ? graduationDate : '';
-    document.getElementById('editStudyUniversityName').value = universityName && universityName !== 'null' && universityName !== 'undefined' && universityName !== 'No especificada' ? universityName : '';
+    
+    // Procesar fecha de graduación
+    let formattedDate = '';
+    if (graduationDate && graduationDate !== 'No especificada' && graduationDate !== 'null') {
+        // Si viene en formato DD/MM/YYYY o similar, convertir a YYYY-MM-DD
+        if (graduationDate.includes('/')) {
+            const parts = graduationDate.split('/');
+            if (parts.length === 3) {
+                // Asumir DD/MM/YYYY
+                formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+        } else if (graduationDate.includes('-')) {
+            // Ya está en formato YYYY-MM-DD o similar
+            formattedDate = graduationDate.split('T')[0]; // Remover hora si existe
+        } else {
+            formattedDate = graduationDate;
+        }
+    }
+    
+    document.getElementById('editStudyGraduationDate').value = formattedDate;
+    document.getElementById('editStudyUniversityName').value = universityName !== 'No especificada' ? universityName : '';
     
     // Mostrar el modal
     document.getElementById('editModal').style.display = 'block';
 }
+
 
 async function loadAvailableOwnersForEdit(selectedOwnerId) {
     try {
@@ -901,7 +874,7 @@ async function updateItem() {
         formData.universityName = document.getElementById('editStudyUniversityName').value;
         formData.database = currentEditDatabase;
         
-        // Para estudios, los campos obligatorios ya están establecidos (personId y professionId no se pueden cambiar)
+        console.log('Studies update formData:', formData);
     }
 
     try {
@@ -1162,8 +1135,8 @@ function deleteStudy(personId, professionId, database) {
 
 async function confirmDelete() {
     console.log('=== CONFIRM DELETE START ===');
-    console.log('currentDeleteId at start:', currentDeleteId, 'Type:', typeof currentDeleteId);
-    console.log('currentDeleteDatabase at start:', currentDeleteDatabase, 'Type:', typeof currentDeleteDatabase);
+    console.log('currentDeleteId at start:', currentDeleteId);
+    console.log('currentDeleteDatabase at start:', currentDeleteDatabase);
     console.log('currentSection:', currentSection);
     
     if (!currentDeleteId || currentDeleteId === 'null' || currentDeleteId === 'undefined') {
@@ -1187,17 +1160,14 @@ async function confirmDelete() {
         const api = APIS[currentSection];
         let deleteUrl;
         
-        // Para estudios, usar el formato personId/professionId
-        if (currentSection === 'studies') {
+        // Manejar URL especial para estudios (requiere personId y professionId separados)
+        if (currentSection === 'studies' && currentDeleteId.includes('-')) {
             const [personId, professionId] = currentDeleteId.split('-');
-            if (!personId || !professionId) {
-                throw new Error('ID de estudio inválido. Formato esperado: personId-professionId');
-            }
             deleteUrl = `${api}/${personId}/${professionId}?database=${currentDeleteDatabase}`;
             console.log('Studies delete URL:', deleteUrl);
         } else {
             deleteUrl = `${api}/${currentDeleteId}?database=${currentDeleteDatabase}`;
-            console.log('Regular delete URL:', deleteUrl);
+            console.log('Standard delete URL:', deleteUrl);
         }
 
         const response = await fetch(deleteUrl, {
@@ -1228,7 +1198,7 @@ async function confirmDelete() {
         else if (currentSection === 'phones') entityType = 'Teléfono';
         else if (currentSection === 'studies') entityType = 'Estudio';
         
-        showMessage(`✅ ${entityType} eliminado exitosamente`, 'success');
+        showMessage(`✅ ${entityType} con ID ${currentDeleteId} eliminada exitosamente`, 'success');
         
         loadBothDatabases();
         
