@@ -146,29 +146,46 @@ public class StudyMapperRest {
 			databaseToUse = databaseToUse.trim().toUpperCase();
 		}
 		
-		// Buscar la persona y profesión en la base de datos correcta
+		// CORRECCIÓN: Intentar buscar en la misma base de datos, con fallback
 		Person person = findPersonById(personId, databaseToUse);
 		if (person == null) {
-			log.error("No se encontró persona con ID: {} en database: {}", personId, databaseToUse);
-			throw new IllegalArgumentException("No se encontró persona con ID: " + personId + " en " + databaseToUse);
+			// Fallback: intentar en la otra base de datos
+			String fallbackDb = "MARIA".equals(databaseToUse) ? "MONGO" : "MARIA";
+			log.warn("Person not found in {}, trying {}", databaseToUse, fallbackDb);
+			person = findPersonById(personId, fallbackDb);
+			
+			if (person == null) {
+				log.error("No se encontró persona con ID: {} en ninguna base de datos", personId);
+				throw new IllegalArgumentException("No se encontró persona con ID: " + personId);
+			}
 		}
 		
 		Profession profession = findProfessionById(professionId, databaseToUse);
 		if (profession == null) {
-			log.error("No se encontró profesión con ID: {} en database: {}", professionId, databaseToUse);
-			throw new IllegalArgumentException("No se encontró profesión con ID: " + professionId + " en " + databaseToUse);
+			// Fallback: intentar en la otra base de datos
+			String fallbackDb = "MARIA".equals(databaseToUse) ? "MONGO" : "MARIA";
+			log.warn("Profession not found in {}, trying {}", databaseToUse, fallbackDb);
+			profession = findProfessionById(professionId, fallbackDb);
+			
+			if (profession == null) {
+				log.error("No se encontró profesión con ID: {} en ninguna base de datos", professionId);
+				throw new IllegalArgumentException("No se encontró profesión con ID: " + professionId);
+			}
 		}
 		
 		study.setPerson(person);
 		study.setProfession(profession);
 		
-		// Procesar fecha de graduación
+		// Procesar fecha de graduación con manejo mejorado
 		if (request.getGraduationDate() != null && !request.getGraduationDate().trim().isEmpty()) {
 			try {
-				LocalDate graduationDate = LocalDate.parse(request.getGraduationDate().trim(), DATE_FORMATTER);
-				study.setGraduationDate(graduationDate);
+				String dateStr = request.getGraduationDate().trim();
+				if (!"null".equalsIgnoreCase(dateStr) && !"undefined".equalsIgnoreCase(dateStr)) {
+					LocalDate graduationDate = LocalDate.parse(dateStr, DATE_FORMATTER);
+					study.setGraduationDate(graduationDate);
+				}
 			} catch (Exception e) {
-				log.warn("Invalid graduation date format: {}", request.getGraduationDate());
+				log.warn("Invalid graduation date format: {} - Error: {}", request.getGraduationDate(), e.getMessage());
 				// No lanzar excepción, solo dejar null
 			}
 		}

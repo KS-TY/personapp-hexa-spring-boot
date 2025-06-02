@@ -1133,6 +1133,7 @@ function deleteStudy(personId, professionId, database) {
     document.getElementById('confirmModal').style.display = 'block';
 }
 
+
 async function confirmDelete() {
     console.log('=== CONFIRM DELETE START ===');
     console.log('currentDeleteId at start:', currentDeleteId);
@@ -1229,73 +1230,4 @@ function updateStatsFromBothForStudies(mariaItems, mongoItems) {
     document.getElementById('studiesMariaCount').textContent = mariaItems.length;
     document.getElementById('studiesMongoCount').textContent = mongoItems.length;
     document.getElementById('totalStudies').textContent = mariaItems.length + mongoItems.length;
-}
-
-async function confirmDelete() {
-    console.log('=== CONFIRM DELETE START ===');
-    console.log('currentDeleteId at start:', currentDeleteId, 'Type:', typeof currentDeleteId);
-    console.log('currentDeleteDatabase at start:', currentDeleteDatabase, 'Type:', typeof currentDeleteDatabase);
-    
-    if (!currentDeleteId || currentDeleteId === 'null' || currentDeleteId === 'undefined') {
-        console.error('currentDeleteId is invalid:', currentDeleteId);
-        showMessage('❌ Error: ID de eliminación perdido', 'error');
-        closeConfirmModal();
-        return;
-    }
-    
-    if (!currentDeleteDatabase || currentDeleteDatabase === 'null' || currentDeleteDatabase === 'undefined') {
-        console.error('currentDeleteDatabase is invalid:', currentDeleteDatabase);
-        showMessage('❌ Error: Base de datos de eliminación perdida', 'error');
-        closeConfirmModal();
-        return;
-    }
-    
-    try {
-        setLoading(true);
-        closeConfirmModal();
-
-        const api = APIS[currentSection];
-        const deleteUrl = `${api}/${currentDeleteId}?database=${currentDeleteDatabase}`;
-        console.log('DELETE URL constructed:', deleteUrl);
-
-        const response = await fetch(deleteUrl, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
-        console.log('DELETE response status:', response.status);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('DELETE error response:', errorText);
-            throw new Error(`Error ${response.status}: ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log('DELETE result:', result);
-        
-        if (result.status && result.status.startsWith('ERROR')) {
-            throw new Error(result.status);
-        }
-
-        let entityType;
-        if (currentSection === 'personas') entityType = 'Persona';
-        else if (currentSection === 'professions') entityType = 'Profesión';
-        else if (currentSection === 'phones') entityType = 'Teléfono';
-        
-        showMessage(`✅ ${entityType} con ID ${currentDeleteId} eliminada exitosamente`, 'success');
-        
-        loadBothDatabases();
-        
-    } catch (error) {
-        console.error('Error during delete:', error);
-        showMessage(`❌ Error al eliminar elemento: ${error.message}`, 'error');
-    } finally {
-        setLoading(false);
-        currentDeleteId = null;
-        currentDeleteDatabase = null;
-        console.log('=== CONFIRM DELETE END - Variables cleared ===');
-    }
 }

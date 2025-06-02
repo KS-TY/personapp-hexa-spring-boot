@@ -12,8 +12,12 @@ import co.edu.javeriana.as.personapp.common.annotations.Adapter;
 import co.edu.javeriana.as.personapp.domain.Study;
 import co.edu.javeriana.as.personapp.mariadb.entity.EstudiosEntity;
 import co.edu.javeriana.as.personapp.mariadb.entity.EstudiosEntityPK;
+import co.edu.javeriana.as.personapp.mariadb.entity.PersonaEntity;
+import co.edu.javeriana.as.personapp.mariadb.entity.ProfesionEntity;
 import co.edu.javeriana.as.personapp.mariadb.mapper.EstudiosMapperMaria;
 import co.edu.javeriana.as.personapp.mariadb.repository.EstudiosRepositoryMaria;
+import co.edu.javeriana.as.personapp.mariadb.repository.PersonaRepositoryMaria;
+import co.edu.javeriana.as.personapp.mariadb.repository.ProfesionRepositoryMaria;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -25,14 +29,46 @@ public class StudyOutputAdapterMaria implements StudyOutputPort {
 	private EstudiosRepositoryMaria estudiosRepositoryMaria;
 
 	@Autowired
+	private PersonaRepositoryMaria personaRepositoryMaria;
+
+	@Autowired
+	private ProfesionRepositoryMaria profesionRepositoryMaria;
+
+	@Autowired
 	private EstudiosMapperMaria estudiosMapperMaria;
 
 	@Override
 	public Study save(Study study) {
 		log.debug("Into save on Adapter MariaDB");
 		try {
-			EstudiosEntity persistedEstudio = estudiosRepositoryMaria.save(estudiosMapperMaria.fromDomainToAdapter(study));
+			// CORRECCIÓN: Asegurar que las entidades relacionadas existen y están cargadas
+			EstudiosEntity estudiosEntity = estudiosMapperMaria.fromDomainToAdapter(study);
+			
+			// Cargar entidades relacionadas completas
+			Integer personId = study.getPerson().getIdentification();
+			Integer professionId = study.getProfession().getIdentification();
+			
+			PersonaEntity persona = personaRepositoryMaria.findById(personId).orElse(null);
+			ProfesionEntity profesion = profesionRepositoryMaria.findById(professionId).orElse(null);
+			
+			if (persona == null) {
+				throw new IllegalArgumentException("Person with ID " + personId + " not found in MariaDB");
+			}
+			
+			if (profesion == null) {
+				throw new IllegalArgumentException("Profession with ID " + professionId + " not found in MariaDB");
+			}
+			
+			// Establecer las entidades relacionadas completas
+			estudiosEntity.setPersona(persona);
+			estudiosEntity.setProfesion(profesion);
+			
+			EstudiosEntity persistedEstudio = estudiosRepositoryMaria.save(estudiosEntity);
+			
+			log.debug("Successfully saved study: PersonId={}, ProfessionId={}", personId, professionId);
+			
 			return estudiosMapperMaria.fromAdapterToDomain(persistedEstudio);
+			
 		} catch (Exception e) {
 			log.error("Error saving study: {}", e.getMessage(), e);
 			throw new RuntimeException("Failed to save study", e);
@@ -41,11 +77,24 @@ public class StudyOutputAdapterMaria implements StudyOutputPort {
 
 	@Override
 	public Boolean delete(Integer personId, Integer professionId) {
-		log.debug("Into delete on Adapter MariaDB");
+		log.debug("Into delete on Adapter MariaDB - PersonId: {}, ProfessionId: {}", personId, professionId);
 		try {
 			EstudiosEntityPK pk = new EstudiosEntityPK(professionId, personId);
+			
+			// Verificar que existe antes de eliminar
+			if (!estudiosRepositoryMaria.existsById(pk)) {
+				log.warn("Study not found for deletion: PersonId={}, ProfessionId={}", personId, professionId);
+				return false;
+			}
+			
 			estudiosRepositoryMaria.deleteById(pk);
-			return estudiosRepositoryMaria.findById(pk).isEmpty();
+			
+			// Verificar que se eliminó correctamente
+			boolean stillExists = estudiosRepositoryMaria.existsById(pk);
+			log.debug("Delete result - Still exists: {}", stillExists);
+			
+			return !stillExists;
+			
 		} catch (Exception e) {
 			log.error("Error deleting study: PersonId={}, ProfessionId={}, Error: {}", 
 				personId, professionId, e.getMessage(), e);
@@ -73,15 +122,13 @@ public class StudyOutputAdapterMaria implements StudyOutputPort {
 
 	@Override
 	public Study findById(Integer personId, Integer professionId) {
-		log.debug("Into findById on Adapter MariaDB");
+		log.debug("Into findById on Adapter MariaDB - PersonId: {}, ProfessionId: {}", personId, professionId);
 		try {
 			EstudiosEntityPK pk = new EstudiosEntityPK(professionId, personId);
-			if (estudiosRepositoryMaria.findById(pk).isEmpty()) {
-				return null;
-			} else {
-				EstudiosEntity entity = estudiosRepositoryMaria.findById(pk).get();
-				return safeMapToDomain(entity);
-			}
+			return estudiosRepositoryMaria.findById(pk)
+					.map(this::safeMapToDomain)
+					.orElse(null);
+					
 		} catch (Exception e) {
 			log.error("Error finding study by ID: PersonId={}, ProfessionId={}, Error: {}", 
 				personId, professionId, e.getMessage(), e);
@@ -91,7 +138,7 @@ public class StudyOutputAdapterMaria implements StudyOutputPort {
 
 	@Override
 	public List<Study> findByPersonId(Integer personId) {
-		log.debug("Into findByPersonId on Adapter MariaDB");
+		log.debug("Into findByPersonId on Adapter MariaDB - PersonId: {}", personId);
 		try {
 			return estudiosRepositoryMaria.findByCcPer(personId).stream()
 					.map(this::safeMapToDomain)
@@ -105,7 +152,7 @@ public class StudyOutputAdapterMaria implements StudyOutputPort {
 
 	@Override
 	public List<Study> findByProfessionId(Integer professionId) {
-		log.debug("Into findByProfessionId on Adapter MariaDB");
+		log.debug("Into findByProfessionId on Adapter MariaDB - ProfessionId: {}", professionId);
 		try {
 			return estudiosRepositoryMaria.findByIdProf(professionId).stream()
 					.map(this::safeMapToDomain)
@@ -119,10 +166,12 @@ public class StudyOutputAdapterMaria implements StudyOutputPort {
 
 	private Study safeMapToDomain(EstudiosEntity entity) {
 		try {
-			log.debug("Mapping entity to domain: {}", entity);
+			log.debug("Mapping entity to domain: PersonId={}, ProfessionId={}", 
+				entity.getEstudiosPK().getCcPer(), entity.getEstudiosPK().getIdProf());
 			return estudiosMapperMaria.fromAdapterToDomain(entity);
 		} catch (Exception e) {
-			log.error("Error mapping entity to domain: {} - Error: {}", entity, e.getMessage(), e);
+			log.error("Error mapping entity to domain: PersonId={}, ProfessionId={} - Error: {}", 
+				entity.getEstudiosPK().getCcPer(), entity.getEstudiosPK().getIdProf(), e.getMessage(), e);
 			return null; 
 		}
 	}

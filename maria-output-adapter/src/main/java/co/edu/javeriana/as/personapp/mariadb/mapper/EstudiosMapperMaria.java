@@ -114,14 +114,8 @@ public class EstudiosMapperMaria {
 	private LocalDate validateGraduationDate(Date fecha) {
 		if (fecha != null) {
 			try {
-				// CORRECCIÓN: Usar toLocalDate() directamente en lugar de toInstant()
-				// Para java.sql.Date, usar toLocalDate() que está disponible desde Java 8
-				if (fecha instanceof java.sql.Date) {
-					return ((java.sql.Date) fecha).toLocalDate();
-				} else {
-					// Para java.util.Date, convertir usando Instant
-					return fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-				}
+				// CORRECCIÓN PRINCIPAL: Manejo mejorado de conversión de fechas
+				return fecha.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 			} catch (Exception e) {
 				log.warn("Error converting Date to LocalDate: {} - Error: {}", fecha, e.getMessage());
 				return null;
