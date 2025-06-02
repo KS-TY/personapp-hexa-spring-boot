@@ -62,9 +62,11 @@ function showSection(section) {
     // Cargar datos de la sección
     loadBothDatabases();
     
-    // Si es la sección de teléfonos, cargar propietarios disponibles
+    // Cargar datos específicos según la sección
     if (section === 'phones') {
         setTimeout(() => loadAvailableOwners(), 500);
+    } else if (section === 'studies') {
+        setTimeout(() => loadAvailablePersonsAndProfessions(), 500);
     }
 }
 
@@ -292,6 +294,40 @@ function displayProfessions(professions, container) {
     }).join('');
 }
 
+// Función específica para manejar eliminación de estudios
+function handleStudyDeleteClick(personId, professionId, database) {
+    console.log('=== HANDLE STUDY DELETE CLICK ===');
+    console.log('Received PersonId:', personId, 'Type:', typeof personId);
+    console.log('Received ProfessionId:', professionId, 'Type:', typeof professionId);
+    console.log('Received Database:', database, 'Type:', typeof database);
+    
+    if (!personId || personId === 'null' || personId === 'undefined' || String(personId).trim() === '' || String(personId).trim() === 'null') {
+        console.error('Invalid PersonId for delete:', personId);
+        showMessage('❌ Error: ID de persona no válido para eliminar', 'error');
+        return;
+    }
+    
+    if (!professionId || professionId === 'null' || professionId === 'undefined' || String(professionId).trim() === '' || String(professionId).trim() === 'null') {
+        console.error('Invalid ProfessionId for delete:', professionId);
+        showMessage('❌ Error: ID de profesión no válido para eliminar', 'error');
+        return;
+    }
+    
+    if (!database || database === 'null' || database === 'undefined' || String(database).trim() === '' || String(database).trim() === 'null') {
+        console.error('Invalid database for delete:', database);
+        showMessage('❌ Error: Base de datos no válida para eliminar', 'error');
+        return;
+    }
+    
+    const cleanPersonId = String(personId).trim();
+    const cleanProfessionId = String(professionId).trim();
+    
+    console.log('Proceeding with study delete - PersonId:', cleanPersonId, 'ProfessionId:', cleanProfessionId, 'Database:', database);
+    deleteStudy(cleanPersonId, cleanProfessionId, database);
+}
+
+
+
 function displayPhones(phones, container) {
     container.innerHTML = phones.map(phone => {
         const phoneNumber = getItemId(phone) || phone.number || phone.num || 'Sin número';
@@ -425,6 +461,10 @@ function updateStatsFromBoth(mariaItems, mongoItems) {
         document.getElementById('phonesMariaCount').textContent = mariaItems.length;
         document.getElementById('phonesMongoCount').textContent = mongoItems.length;
         document.getElementById('totalPhones').textContent = mariaItems.length + mongoItems.length;
+    } else if (currentSection === 'studies') {
+        document.getElementById('studiesMariaCount').textContent = mariaItems.length;
+        document.getElementById('studiesMongoCount').textContent = mongoItems.length;
+        document.getElementById('totalStudies').textContent = mariaItems.length + mongoItems.length;
     }
 }
 
@@ -669,6 +709,30 @@ function openPhoneEditModal(number, company, ownerId, database) {
     document.getElementById('editModal').style.display = 'block';
 }
 
+function openStudyEditModal(personId, professionId, graduationDate, universityName, database) {
+    console.log('Opening study edit modal with:', { personId, professionId, graduationDate, universityName, database });
+    
+    // Crear ID compuesto para estudios
+    currentEditId = `${personId}-${professionId}`;
+    currentEditDatabase = database === 'MariaDB' ? 'MARIA' : 'MONGO';
+    
+    // Configurar el modal para estudios
+    document.getElementById('editModalTitle').textContent = '✏️ Editar Estudio';
+    document.getElementById('editPersonForm').style.display = 'none';
+    document.getElementById('editProfessionForm').style.display = 'none';
+    document.getElementById('editPhoneForm').style.display = 'none';
+    document.getElementById('editStudyForm').style.display = 'block';
+    
+    // Llenar los campos (personId y professionId son readonly)
+    document.getElementById('editStudyPersonId').value = personId;
+    document.getElementById('editStudyProfessionId').value = professionId;
+    document.getElementById('editStudyGraduationDate').value = graduationDate && graduationDate !== 'null' && graduationDate !== 'undefined' && graduationDate !== 'No especificada' ? graduationDate : '';
+    document.getElementById('editStudyUniversityName').value = universityName && universityName !== 'null' && universityName !== 'undefined' && universityName !== 'No especificada' ? universityName : '';
+    
+    // Mostrar el modal
+    document.getElementById('editModal').style.display = 'block';
+}
+
 async function loadAvailableOwnersForEdit(selectedOwnerId) {
     try {
         // Cargar personas de ambas bases de datos
@@ -829,6 +893,106 @@ async function updateItem() {
     }
 }
 
+// Función para cargar personas y profesiones disponibles para estudios
+async function loadAvailablePersonsAndProfessions() {
+    if (currentSection !== 'studies') return;
+    
+    try {
+        console.log('Loading available persons and professions for studies...');
+        
+        // Cargar personas de ambas bases de datos
+        const [mariaPersonasResponse, mongoPersonasResponse] = await Promise.all([
+            fetch(`${PERSONAS_API}/MARIA`),
+            fetch(`${PERSONAS_API}/MONGO`)
+        ]);
+
+        const mariaPersonas = mariaPersonasResponse.ok ? await mariaPersonasResponse.json() : [];
+        const mongoPersonas = mongoPersonasResponse.ok ? await mongoPersonasResponse.json() : [];
+        
+        // Cargar profesiones de ambas bases de datos
+        const [mariaProfessionsResponse, mongoProfessionsResponse] = await Promise.all([
+            fetch(`${PROFESSIONS_API}/MARIA`),
+            fetch(`${PROFESSIONS_API}/MONGO`)
+        ]);
+
+        const mariaProfessions = mariaProfessionsResponse.ok ? await mariaProfessionsResponse.json() : [];
+        const mongoProfessions = mongoProfessionsResponse.ok ? await mongoProfessionsResponse.json() : [];
+        
+        // Combinar y eliminar duplicados por ID
+        const allPersonas = [...mariaPersonas, ...mongoPersonas];
+        const uniquePersonas = allPersonas.filter((persona, index, self) => 
+            index === self.findIndex(p => getItemId(p) === getItemId(persona))
+        );
+        
+        const allProfessions = [...mariaProfessions, ...mongoProfessions];
+        const uniqueProfessions = allProfessions.filter((profession, index, self) => 
+            index === self.findIndex(p => getItemId(p) === getItemId(profession))
+        );
+        
+        // Actualizar los dropdowns
+        updatePersonsDropdown(uniquePersonas);
+        updateProfessionsDropdown(uniqueProfessions);
+        
+        console.log(`Loaded ${uniquePersonas.length} unique persons and ${uniqueProfessions.length} unique professions`);
+        
+    } catch (error) {
+        console.error('Error loading available persons and professions:', error);
+        showMessage('❌ Error al cargar personas y profesiones disponibles', 'error');
+    }
+}
+
+function updatePersonsDropdown(personas) {
+    const personSelect = document.getElementById('studyPersonId');
+    if (!personSelect) {
+        console.error('studyPersonId element not found');
+        return;
+    }
+    
+    // Limpiar opciones existentes
+    personSelect.innerHTML = '<option value="">Seleccione una persona...</option>';
+    
+    // Agregar personas disponibles
+    personas.forEach(persona => {
+        const personId = getItemId(persona);
+        const personName = `${persona.firstName || persona.nombre || ''} ${persona.lastName || persona.apellido || ''}`.trim();
+        
+        if (personId && personName) {
+            const option = document.createElement('option');
+            option.value = personId;
+            option.textContent = `${personId} - ${personName}`;
+            personSelect.appendChild(option);
+        }
+    });
+    
+    console.log('Updated study person dropdown with', personas.length, 'persons');
+}
+
+function updateProfessionsDropdown(professions) {
+    const professionSelect = document.getElementById('studyProfessionId');
+    if (!professionSelect) {
+        console.error('studyProfessionId element not found');
+        return;
+    }
+    
+    // Limpiar opciones existentes
+    professionSelect.innerHTML = '<option value="">Seleccione una profesión...</option>';
+    
+    // Agregar profesiones disponibles
+    professions.forEach(profession => {
+        const professionId = getItemId(profession);
+        const professionName = profession.name || profession.nom || '';
+        
+        if (professionId && professionName) {
+            const option = document.createElement('option');
+            option.value = professionId;
+            option.textContent = `${professionId} - ${professionName}`;
+            professionSelect.appendChild(option);
+        }
+    });
+    
+    console.log('Updated study profession dropdown with', professions.length, 'professions');
+}
+
 // Eliminación
 function handleDeleteClick(id, database) {
     console.log('=== HANDLE DELETE CLICK ===');
@@ -895,6 +1059,132 @@ function deleteItem(id, database) {
     document.getElementById('confirmModal').style.display = 'block';
 }
 
+function deleteStudy(personId, professionId, database) {
+    console.log('=== DELETE STUDY ===');
+    console.log('PersonId received:', personId, 'Type:', typeof personId);
+    console.log('ProfessionId received:', professionId, 'Type:', typeof professionId);
+    console.log('Database received:', database, 'Type:', typeof database);
+    
+    const cleanPersonId = String(personId).trim();
+    const cleanProfessionId = String(professionId).trim();
+    const cleanDatabase = String(database).trim();
+    
+    if (!cleanPersonId || cleanPersonId === 'null' || cleanPersonId === 'undefined') {
+        console.error('Cannot set currentDeleteId - invalid PersonId:', cleanPersonId);
+        showMessage('❌ Error: ID de persona no válido', 'error');
+        return;
+    }
+    
+    if (!cleanProfessionId || cleanProfessionId === 'null' || cleanProfessionId === 'undefined') {
+        console.error('Cannot set currentDeleteId - invalid ProfessionId:', cleanProfessionId);
+        showMessage('❌ Error: ID de profesión no válido', 'error');
+        return;
+    }
+    
+    if (!cleanDatabase || cleanDatabase === 'null' || cleanDatabase === 'undefined') {
+        console.error('Cannot set currentDeleteDatabase - invalid value:', cleanDatabase);
+        showMessage('❌ Error: Base de datos no válida', 'error');
+        return;
+    }
+    
+    // Para estudios, usamos un ID compuesto
+    currentDeleteId = `${cleanPersonId}-${cleanProfessionId}`;
+    currentDeleteDatabase = cleanDatabase === 'MariaDB' ? 'MARIA' : 'MONGO';
+    
+    console.log('Global vars set - currentDeleteId:', currentDeleteId);
+    console.log('Global vars set - currentDeleteDatabase:', currentDeleteDatabase);
+    
+    if (!currentDeleteId || !currentDeleteDatabase) {
+        console.error('Failed to set global delete variables');
+        showMessage('❌ Error: No se pudieron establecer los datos para eliminar', 'error');
+        return;
+    }
+    
+    const message = `¿Está seguro de que desea eliminar el estudio de la persona ${cleanPersonId} en la profesión ${cleanProfessionId} de ${cleanDatabase}?`;
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmModal').style.display = 'block';
+}
+
+async function confirmDelete() {
+    console.log('=== CONFIRM DELETE START ===');
+    console.log('currentDeleteId at start:', currentDeleteId, 'Type:', typeof currentDeleteId);
+    console.log('currentDeleteDatabase at start:', currentDeleteDatabase, 'Type:', typeof currentDeleteDatabase);
+    console.log('currentSection:', currentSection);
+    
+    if (!currentDeleteId || currentDeleteId === 'null' || currentDeleteId === 'undefined') {
+        console.error('currentDeleteId is invalid:', currentDeleteId);
+        showMessage('❌ Error: ID de eliminación perdido', 'error');
+        closeConfirmModal();
+        return;
+    }
+    
+    if (!currentDeleteDatabase || currentDeleteDatabase === 'null' || currentDeleteDatabase === 'undefined') {
+        console.error('currentDeleteDatabase is invalid:', currentDeleteDatabase);
+        showMessage('❌ Error: Base de datos de eliminación perdida', 'error');
+        closeConfirmModal();
+        return;
+    }
+    
+    try {
+        setLoading(true);
+        closeConfirmModal();
+
+        const api = APIS[currentSection];
+        let deleteUrl;
+        
+        // Para estudios, usar el formato personId/professionId
+        if (currentSection === 'studies') {
+            const [personId, professionId] = currentDeleteId.split('-');
+            deleteUrl = `${api}/${personId}/${professionId}?database=${currentDeleteDatabase}`;
+        } else {
+            deleteUrl = `${api}/${currentDeleteId}?database=${currentDeleteDatabase}`;
+        }
+        
+        console.log('DELETE URL constructed:', deleteUrl);
+
+        const response = await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        console.log('DELETE response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('DELETE error response:', errorText);
+            throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('DELETE result:', result);
+        
+        if (result.status && result.status.startsWith('ERROR')) {
+            throw new Error(result.status);
+        }
+
+        let entityType;
+        if (currentSection === 'personas') entityType = 'Persona';
+        else if (currentSection === 'professions') entityType = 'Profesión';
+        else if (currentSection === 'phones') entityType = 'Teléfono';
+        else if (currentSection === 'studies') entityType = 'Estudio';
+        
+        showMessage(`✅ ${entityType} eliminado exitosamente`, 'success');
+        
+        loadBothDatabases();
+        
+    } catch (error) {
+        console.error('Error during delete:', error);
+        showMessage(`❌ Error al eliminar elemento: ${error.message}`, 'error');
+    } finally {
+        setLoading(false);
+        currentDeleteId = null;
+        currentDeleteDatabase = null;
+        console.log('=== CONFIRM DELETE END - Variables cleared ===');
+    }
+}
+
 function closeConfirmModal() {
     console.log('=== CLOSE CONFIRM MODAL ===');
     document.getElementById('confirmModal').style.display = 'none';
@@ -905,6 +1195,12 @@ function cancelDelete() {
     currentDeleteId = null;
     currentDeleteDatabase = null;
     closeConfirmModal();
+}
+
+function updateStatsFromBothForStudies(mariaItems, mongoItems) {
+    document.getElementById('studiesMariaCount').textContent = mariaItems.length;
+    document.getElementById('studiesMongoCount').textContent = mongoItems.length;
+    document.getElementById('totalStudies').textContent = mariaItems.length + mongoItems.length;
 }
 
 async function confirmDelete() {
