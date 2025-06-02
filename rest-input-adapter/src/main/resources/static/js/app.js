@@ -364,17 +364,70 @@ function displayPhones(phones, container) {
 }
 
 function displayStudies(studies, container) {
+    console.log('=== DISPLAY STUDIES DEBUG ===');
+    console.log('Studies array received:', studies);
+    console.log('Number of studies:', studies.length);
+    
+    if (!studies || studies.length === 0) {
+        container.innerHTML = `<p style="text-align: center; color: #666; padding: 40px;">No hay estudios registrados</p>`;
+        return;
+    }
+    
+    // Log de ejemplo para debug
+    if (studies.length > 0) {
+        console.log('Sample study object:', studies[0]);
+        console.log('Sample study keys:', Object.keys(studies[0]));
+    }
+    
     container.innerHTML = studies.map(study => {
-        const studyId = `${study.personId || study.cc_per || 'N/A'}-${study.professionId || study.id_prof || 'N/A'}`;
-        const personId = study.personId || study.cc_per || 'N/A';
-        const professionId = study.professionId || study.id_prof || 'N/A';
-        const graduationDate = (study.graduationDate || study.fecha || 'No especificada').replace(/'/g, "&apos;");
-        const universityName = (study.universityName || study.univer || 'No especificada').replace(/'/g, "&apos;");
+        console.log('Processing study:', study);
+        
+        // Extraer IDs de manera más robusta
+        let personId = study.personId || study.cc_per || study.ccPer || 'N/A';
+        let professionId = study.professionId || study.id_prof || study.idProf || 'N/A';
+        
+        // Manejar el caso donde los IDs podrían estar en objetos anidados
+        if (study.person && study.person.identification) {
+            personId = study.person.identification;
+        }
+        if (study.profession && study.profession.identification) {
+            professionId = study.profession.identification;
+        }
+        
+        console.log('Extracted PersonId:', personId, 'ProfessionId:', professionId);
+        
+        const studyId = `${personId}-${professionId}`;
+        
+        // Extraer otros campos de manera robusta
+        let graduationDate = study.graduationDate || study.fecha || 'No especificada';
+        let universityName = study.universityName || study.univer || 'No especificada';
+        
+        // Limpiar valores nulos o undefined
+        if (graduationDate === null || graduationDate === 'null' || graduationDate === undefined) {
+            graduationDate = 'No especificada';
+        }
+        if (universityName === null || universityName === 'null' || universityName === undefined) {
+            universityName = 'No especificada';
+        }
+        
         const studyDatabase = study.database || 'MariaDB';
+        
+        // Escapar comillas para HTML
+        const escapedGraduationDate = String(graduationDate).replace(/'/g, "&apos;");
+        const escapedUniversityName = String(universityName).replace(/'/g, "&apos;");
+        
+        console.log('Final values - PersonId:', personId, 'ProfessionId:', professionId, 
+                   'Date:', graduationDate, 'University:', universityName, 'DB:', studyDatabase);
+        
+        // Validar que tenemos IDs válidos antes de crear la tarjeta
+        if (!personId || personId === 'N/A' || !professionId || professionId === 'N/A') {
+            console.error('Invalid study data, skipping:', study);
+            return '';
+        }
         
         return `
             <div class="item-card">
-                <div class="item-id">👨‍🎓 ${studyId}</div>
+                <div class="item-id">🎓 ${studyId}</div>
                 <div class="item-name">Persona ID: ${personId} → Profesión ID: ${professionId}</div>
                 <div class="item-details">
                     <strong>Fecha de graduación:</strong> ${graduationDate}<br>
@@ -384,7 +437,7 @@ function displayStudies(studies, container) {
                     ${studyDatabase}
                 </span>
                 <div class="item-actions">
-                    <button class="btn-small btn-edit" onclick="openStudyEditModal('${personId}', '${professionId}', '${graduationDate}', '${universityName}', '${studyDatabase}')">
+                    <button class="btn-small btn-edit" onclick="openStudyEditModal('${personId}', '${professionId}', '${escapedGraduationDate}', '${escapedUniversityName}', '${studyDatabase}')">
                         ✏️ Editar
                     </button>
                     <button class="btn-small btn-delete" onclick="handleStudyDeleteClick('${personId}', '${professionId}', '${studyDatabase}')">
@@ -393,7 +446,9 @@ function displayStudies(studies, container) {
                 </div>
             </div>
         `;
-    }).join('');
+    }).filter(html => html !== '').join('');
+    
+    console.log('=== DISPLAY STUDIES COMPLETED ===');
 }
 
 function getGenderText(sex) {
@@ -1135,12 +1190,15 @@ async function confirmDelete() {
         // Para estudios, usar el formato personId/professionId
         if (currentSection === 'studies') {
             const [personId, professionId] = currentDeleteId.split('-');
+            if (!personId || !professionId) {
+                throw new Error('ID de estudio inválido. Formato esperado: personId-professionId');
+            }
             deleteUrl = `${api}/${personId}/${professionId}?database=${currentDeleteDatabase}`;
+            console.log('Studies delete URL:', deleteUrl);
         } else {
             deleteUrl = `${api}/${currentDeleteId}?database=${currentDeleteDatabase}`;
+            console.log('Regular delete URL:', deleteUrl);
         }
-        
-        console.log('DELETE URL constructed:', deleteUrl);
 
         const response = await fetch(deleteUrl, {
             method: 'DELETE',
