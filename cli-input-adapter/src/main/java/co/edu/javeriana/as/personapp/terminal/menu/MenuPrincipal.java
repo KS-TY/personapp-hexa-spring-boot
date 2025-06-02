@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import co.edu.javeriana.as.personapp.terminal.adapter.PersonaInputAdapterCli;
 import co.edu.javeriana.as.personapp.terminal.adapter.PhoneInputAdapterCli;
 import co.edu.javeriana.as.personapp.terminal.adapter.ProfessionInputAdapterCli;
+import co.edu.javeriana.as.personapp.terminal.adapter.StudyInputAdapterCli;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -25,6 +26,9 @@ public class MenuPrincipal {
 	@Autowired
 	private PhoneInputAdapterCli phoneInputAdapterCli;
 
+	@Autowired
+	private StudyInputAdapterCli studyInputAdapterCli;
+
 	private static final int SALIR = 0;
 	private static final int MODULO_PERSONA = 1;
 	private static final int MODULO_PROFESION = 2;
@@ -35,12 +39,14 @@ public class MenuPrincipal {
 	private final PersonaMenu personaMenu;
 	private final ProfessionMenu professionMenu;
 	private final PhoneMenu phoneMenu;
+	private final StudyMenu studyMenu;
 	private final Scanner keyboard;
 
 	public MenuPrincipal() {
 		this.personaMenu = new PersonaMenu();
 		this.professionMenu = new ProfessionMenu();
 		this.phoneMenu = new PhoneMenu();
+		this.studyMenu = new StudyMenu();
 		this.keyboard = new Scanner(System.in);
 	}
 
@@ -66,7 +72,8 @@ public class MenuPrincipal {
 					log.info("volvio de teléfonos");
 					break;
 				case MODULO_ESTUDIO:
-					log.warn("Implementar Menu de Estudios");
+					studyMenu.iniciarMenu(studyInputAdapterCli, keyboard);
+					log.info("volvio de estudios");
 					break;
 				default:
 					log.warn("La opción elegida no es válida.");

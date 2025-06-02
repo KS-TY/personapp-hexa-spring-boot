@@ -19,6 +19,7 @@
                 <button class="nav-button active" data-section="personas">👥 Personas</button>
                 <button class="nav-button" data-section="professions">💼 Profesiones</button>
                 <button class="nav-button" data-section="phones">📱 Teléfonos</button>
+                <button class="nav-button" data-section="studies">🎓 Estudios</button>
             </div>
 
             <!-- Sección de Personas -->
@@ -231,6 +232,104 @@
                 <div id="phones-container">
                     <h3>📱 Lista de Teléfonos</h3>
                     <div id="phones-list" class="items-grid"></div>
+                </div>
+            </div>
+
+            <!-- Sección de Estudios -->
+            <div id="studies-section" class="section">
+                <!-- Estadísticas de Estudios -->
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalStudies">0</div>
+                        <div class="stat-label">Total Estudios</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="studiesMariaCount">0</div>
+                        <div class="stat-label">En MariaDB</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="studiesMongoCount">0</div>
+                        <div class="stat-label">En MongoDB</div>
+                    </div>
+                </div>
+
+                <!-- Controles de Estudios -->
+                <div class="controls">
+                    <div class="db-selector">
+                        <label for="studyDatabase">Base de Datos:</label>
+                        <select id="studyDatabase">
+                            <option value="MARIA">MariaDB</option>
+                            <option value="MONGO">MongoDB</option>
+                        </select>
+                    </div>
+                    <button onclick="loadItems()">🔄 Cargar Estudios</button>
+                    <button onclick="loadBothDatabases()">📊 Cargar Ambas BD</button>
+                    <button onclick="loadAvailablePersonsAndProfessions()">👨‍🎓 Actualizar Personas/Profesiones</button>
+                    <button onclick="window.open('/swagger-ui.html', '_blank')">📖 Ver API Docs</button>
+                </div>
+
+                <!-- Formulario para crear estudio -->
+                <div class="form-section">
+                    <h3>➕ Crear Nuevo Estudio</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="studyPersonId">Persona:</label>
+                            <select id="studyPersonId" required>
+                                <option value="">Seleccione una persona...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studyProfessionId">Profesión:</label>
+                            <select id="studyProfessionId" required>
+                                <option value="">Seleccione una profesión...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studyGraduationDate">Fecha de Graduación:</label>
+                            <input type="date" id="studyGraduationDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="studyUniversityName">Universidad:</label>
+                            <input type="text" id="studyUniversityName" placeholder="Ej: Universidad Javeriana">
+                        </div>
+                        <div class="form-group">
+                            <label for="studyCreateDatabase">Guardar en:</label>
+                            <select id="studyCreateDatabase" required>
+                                <option value="MARIA">MariaDB</option>
+                                <option value="MONGO">MongoDB</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="createItem()">➕ Crear Estudio</button>
+                </div>
+
+                <!-- Lista de estudios -->
+                <div id="studies-container">
+                    <h3>🎓 Lista de Estudios</h3>
+                    <div id="studies-list" class="items-grid"></div>
+                </div>
+            </div>
+
+            <!-- Agregar este formulario de edición después de los otros formularios de edición en el modal -->
+            <!-- Formulario de edición para Estudios -->
+            <div id="editStudyForm" class="edit-form" style="display: none;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="editStudyPersonId">ID Persona:</label>
+                        <input type="number" id="editStudyPersonId" readonly style="background: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label for="editStudyProfessionId">ID Profesión:</label>
+                        <input type="number" id="editStudyProfessionId" readonly style="background: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label for="editStudyGraduationDate">Fecha de Graduación:</label>
+                        <input type="date" id="editStudyGraduationDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="editStudyUniversityName">Universidad:</label>
+                        <input type="text" id="editStudyUniversityName" placeholder="Ej: Universidad Javeriana">
+                    </div>
                 </div>
             </div>
 

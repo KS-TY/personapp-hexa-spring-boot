@@ -3,19 +3,22 @@
 const PERSONAS_API = '/api/v1/persona';
 const PROFESSIONS_API = '/api/v1/profession';
 const PHONES_API = '/api/v1/phone';
+const STUDIES_API = '/api/v1/study';
 
 // Variables globales
 let currentEditId = null;
 let currentDeleteId = null;
 let currentDeleteDatabase = null;
-let currentEditDatabase = null; // Nueva variable para recordar la BD original
+let currentEditDatabase = null; 
 let currentSection = 'personas';
+
 
 // Configuración de APIs por sección
 const APIS = {
     personas: PERSONAS_API,
     professions: PROFESSIONS_API,
-    phones: PHONES_API
+    phones: PHONES_API,
+    studies: STUDIES_API
 };
 
 // Inicialización
@@ -131,6 +134,8 @@ async function loadItems() {
         database = document.getElementById('professionDatabase').value;
     } else if (currentSection === 'phones') {
         database = document.getElementById('phoneDatabase').value;
+    } else if (currentSection === 'studies') {
+        database = document.getElementById('studyDatabase').value;
     }
     
     const api = APIS[currentSection];
@@ -209,6 +214,8 @@ function displayItems(items, source) {
         displayProfessions(items, container);
     } else if (currentSection === 'phones') {
         displayPhones(items, container);
+    } else if (currentSection === 'studies') {
+        displayStudies(items, container);
     }
 }
 
@@ -320,6 +327,39 @@ function displayPhones(phones, container) {
     }).join('');
 }
 
+function displayStudies(studies, container) {
+    container.innerHTML = studies.map(study => {
+        const studyId = `${study.personId || study.cc_per || 'N/A'}-${study.professionId || study.id_prof || 'N/A'}`;
+        const personId = study.personId || study.cc_per || 'N/A';
+        const professionId = study.professionId || study.id_prof || 'N/A';
+        const graduationDate = (study.graduationDate || study.fecha || 'No especificada').replace(/'/g, "&apos;");
+        const universityName = (study.universityName || study.univer || 'No especificada').replace(/'/g, "&apos;");
+        const studyDatabase = study.database || 'MariaDB';
+        
+        return `
+            <div class="item-card">
+                <div class="item-id">👨‍🎓 ${studyId}</div>
+                <div class="item-name">Persona ID: ${personId} → Profesión ID: ${professionId}</div>
+                <div class="item-details">
+                    <strong>Fecha de graduación:</strong> ${graduationDate}<br>
+                    <strong>Universidad:</strong> ${universityName}
+                </div>
+                <span class="database-badge ${studyDatabase === 'MariaDB' ? 'maria-badge' : 'mongo-badge'}">
+                    ${studyDatabase}
+                </span>
+                <div class="item-actions">
+                    <button class="btn-small btn-edit" onclick="openStudyEditModal('${personId}', '${professionId}', '${graduationDate}', '${universityName}', '${studyDatabase}')">
+                        ✏️ Editar
+                    </button>
+                    <button class="btn-small btn-delete" onclick="handleStudyDeleteClick('${personId}', '${professionId}', '${studyDatabase}')">
+                        🗑️ Eliminar
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 function getGenderText(sex) {
     switch(sex) {
         case 'M': case 'MALE': return 'Masculino';
@@ -359,6 +399,15 @@ function updateStats(items, database) {
         } else if (database === 'MONGO') {
             document.getElementById('phonesMongoCount').textContent = total;
             document.getElementById('phonesMariaCount').textContent = '0';
+        }
+    } else if (currentSection === 'studies') {
+        document.getElementById('totalStudies').textContent = total;
+        if (database === 'MARIA') {
+            document.getElementById('studiesMariaCount').textContent = total;
+            document.getElementById('studiesMongoCount').textContent = '0';
+        } else if (database === 'MONGO') {
+            document.getElementById('studiesMongoCount').textContent = total;
+            document.getElementById('studiesMariaCount').textContent = '0';
         }
     }
 }
@@ -420,6 +469,17 @@ async function createItem() {
             showMessage('❌ Por favor complete todos los campos obligatorios', 'error');
             return;
         }
+    } else if (currentSection === 'studies') {
+        formData.personId = document.getElementById('studyPersonId').value;
+        formData.professionId = document.getElementById('studyProfessionId').value;
+        formData.graduationDate = document.getElementById('studyGraduationDate').value;
+        formData.universityName = document.getElementById('studyUniversityName').value;
+        formData.database = document.getElementById('studyCreateDatabase').value;
+        
+        if (!formData.personId || !formData.professionId || !formData.database) {
+            showMessage('❌ Por favor complete los campos obligatorios (Persona, Profesión, Base de Datos)', 'error');
+            return;
+        }
     }
 
     console.log('=== FINAL FORM DATA ===');
@@ -470,6 +530,11 @@ async function createItem() {
             document.getElementById('phoneNumber').value = '';
             document.getElementById('phoneCompany').value = '';
             document.getElementById('phoneOwnerId').value = '';
+        } else if (currentSection === 'studies') {
+            document.getElementById('studyPersonId').value = '';
+            document.getElementById('studyProfessionId').value = '';
+            document.getElementById('studyGraduationDate').value = '';
+            document.getElementById('studyUniversityName').value = '';
         }
         
         loadBothDatabases();
@@ -656,6 +721,7 @@ function closeEditModal() {
     document.getElementById('editPersonForm').style.display = 'none';
     document.getElementById('editProfessionForm').style.display = 'none';
     document.getElementById('editPhoneForm').style.display = 'none';
+    document.getElementById('editStudyForm').style.display = 'none';  // Nueva línea
     currentEditId = null;
     currentEditDatabase = null;
 }
@@ -707,11 +773,32 @@ async function updateItem() {
             showMessage('❌ Por favor complete los campos obligatorios (Compañía, Propietario)', 'error');
             return;
         }
+    } else if (currentSection === 'studies') {
+        // Para estudios, currentEditId tiene formato "personId-professionId"
+        const [personId, professionId] = currentEditId.split('-');
+        formData.personId = personId;
+        formData.professionId = professionId;
+        formData.graduationDate = document.getElementById('editStudyGraduationDate').value;
+        formData.universityName = document.getElementById('editStudyUniversityName').value;
+        formData.database = currentEditDatabase;
+        
+        // Para estudios, los campos obligatorios ya están establecidos (personId y professionId no se pueden cambiar)
     }
 
     try {
         setLoading(true);
-        const response = await fetch(`${api}/${currentEditId}`, {
+        
+        let updateUrl;
+        
+        // Manejar URL especial para estudios
+        if (currentSection === 'studies') {
+            const [personId, professionId] = currentEditId.split('-');
+            updateUrl = `${api}/${personId}/${professionId}`;
+        } else {
+            updateUrl = `${api}/${currentEditId}`;
+        }
+        
+        const response = await fetch(updateUrl, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

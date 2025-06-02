@@ -86,7 +86,7 @@ dbPersona.profesion.insertMany([
   }
 ], { ordered: false });
 
-print("Insertando datos de ejemplo en colección telefono...");
+print("Insertando datos en colección telefono...");
 dbPersona.telefono.insertMany([
   {
     "_id": "3001234567",
@@ -105,11 +105,39 @@ dbPersona.telefono.insertMany([
       "$id": NumberInt(321654987)
     },
     "_class": "co.edu.javeriana.as.personapp.mongo.document.TelefonoDocument"
+  },
+  {
+    "_id": "3157894561",
+    "oper": "Tigo",
+    "primaryDuenio": {
+      "$ref": "persona", 
+      "$id": NumberInt(147258369)
+    },
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.TelefonoDocument"
+  },
+  {
+    "_id": "3208523697",
+    "oper": "Claro",
+    "primaryDuenio": {
+      "$ref": "persona", 
+      "$id": NumberInt(963852741)
+    },
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.TelefonoDocument"
+  },
+  {
+    "_id": "3151478523",
+    "oper": "Movistar",
+    "primaryDuenio": {
+      "$ref": "persona", 
+      "$id": NumberInt(987654321)
+    },
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.TelefonoDocument"
   }
 ], { ordered: false });
 
-print("Insertando datos de ejemplo en colección estudios...");
+print("Insertando estudios por defecto en colección estudios...");
 dbPersona.estudios.insertMany([
+  // Pepe Perez (123456789) estudió Ingeniería de Software
   {
     "_id": "123456789-1",
     "primaryPersona": {
@@ -124,6 +152,8 @@ dbPersona.estudios.insertMany([
     "univer": "Universidad Javeriana",
     "_class": "co.edu.javeriana.as.personapp.mongo.document.EstudiosDocument"
   },
+  
+  // Pepa Juarez (321654987) estudió Medicina
   {
     "_id": "321654987-2",
     "primaryPersona": {
@@ -135,6 +165,104 @@ dbPersona.estudios.insertMany([
       "$id": NumberInt(2)
     },
     "fecha": new Date("2018-06-20"),
+    "univer": "Universidad Nacional",
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.EstudiosDocument"
+  },
+  
+  // Fede Perez (963852741) estudió Derecho
+  {
+    "_id": "963852741-3",
+    "primaryPersona": {
+      "$ref": "persona",
+      "$id": NumberInt(963852741)
+    },
+    "primaryProfesion": {
+      "$ref": "profesion",
+      "$id": NumberInt(3)
+    },
+    "fecha": new Date("2021-11-10"),
+    "univer": "Universidad de los Andes",
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.EstudiosDocument"
+  },
+  
+  // Pepito Perez (987654321) estudió Educación
+  {
+    "_id": "987654321-4",
+    "primaryPersona": {
+      "$ref": "persona",
+      "$id": NumberInt(987654321)
+    },
+    "primaryProfesion": {
+      "$ref": "profesion",
+      "$id": NumberInt(4)
+    },
+    "fecha": new Date("2019-05-18"),
+    "univer": "Universidad Pedagógica",
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.EstudiosDocument"
+  },
+  
+  // Pepita Juarez (147258369) estudió Contabilidad
+  {
+    "_id": "147258369-5",
+    "primaryPersona": {
+      "$ref": "persona",
+      "$id": NumberInt(147258369)
+    },
+    "primaryProfesion": {
+      "$ref": "profesion",
+      "$id": NumberInt(5)
+    },
+    "fecha": new Date("2023-07-25"),
+    "univer": "Universidad Minuto de Dios",
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.EstudiosDocument"
+  },
+  
+  // Estudios adicionales (personas con múltiples carreras)
+  
+  // Pepe también estudió Contabilidad
+  {
+    "_id": "123456789-5",
+    "primaryPersona": {
+      "$ref": "persona",
+      "$id": NumberInt(123456789)
+    },
+    "primaryProfesion": {
+      "$ref": "profesion",
+      "$id": NumberInt(5)
+    },
+    "fecha": new Date("2022-03-12"),
+    "univer": "Universidad Externado",
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.EstudiosDocument"
+  },
+  
+  // Pepa también estudió Derecho
+  {
+    "_id": "321654987-3",
+    "primaryPersona": {
+      "$ref": "persona",
+      "$id": NumberInt(321654987)
+    },
+    "primaryProfesion": {
+      "$ref": "profesion",
+      "$id": NumberInt(3)
+    },
+    "fecha": new Date("2016-09-30"),
+    "univer": "Universidad Javeriana",
+    "_class": "co.edu.javeriana.as.personapp.mongo.document.EstudiosDocument"
+  },
+  
+  // Fede también estudió Ingeniería
+  {
+    "_id": "963852741-1",
+    "primaryPersona": {
+      "$ref": "persona",
+      "$id": NumberInt(963852741)
+    },
+    "primaryProfesion": {
+      "$ref": "profesion",
+      "$id": NumberInt(1)
+    },
+    "fecha": new Date("2023-01-20"),
     "univer": "Universidad Nacional",
     "_class": "co.edu.javeriana.as.personapp.mongo.document.EstudiosDocument"
   }
